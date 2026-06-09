@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,7 +25,16 @@ import {
   User,
   Settings
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+// Lazy-load the recharts-powered chart so its ~330KB graph stays out of the
+// dashboard's initial bundle (cuts the route's first-compile/navigation cost).
+const AdminBranchChart = dynamic(() => import('../AdminBranchChart'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-56 w-full pt-2 flex items-center justify-center text-zinc-600 font-mono text-[10px]">
+      Loading placement analytics…
+    </div>
+  )
+});
 
 interface StudentRow {
   id: string;
@@ -44,57 +54,6 @@ const mockStudents: StudentRow[] = [
   { id: '4', name: 'Priya Patel', degree: 'B.Tech (ECE)', cgpa: '8.5', resumeStatus: 'Gaps Detected', topSkill: 'Python / C++ / OpenCV', applications: 7, offers: 0 },
   { id: '5', name: 'Kunal Sen', degree: 'B.Tech (CSE)', cgpa: '9.0', resumeStatus: 'Processed', topSkill: 'Java / Kubernetes / AWS', applications: 9, offers: 1 }
 ];
-
-const placementStatsByBranch = [
-  { branch: 'CSE', rate: 94, placed: 188, total: 200, status: 'Excellent', color: '#10b981' },
-  { branch: 'AI/ML', rate: 91, placed: 91, total: 100, status: 'Excellent', color: '#06b6d4' },
-  { branch: 'IT', rate: 88, placed: 88, total: 100, status: 'Good', color: '#3b82f6' },
-  { branch: 'ECE', rate: 76, placed: 76, total: 100, status: 'Good', color: '#8b5cf6' },
-  { branch: 'Mechanical', rate: 65, placed: 65, total: 100, status: 'Average', color: '#f97316' },
-  { branch: 'Civil', rate: 58, placed: 58, total: 100, status: 'Average', color: '#ef4444' }
-];
-
-// Stripe-grade custom tooltip component
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const branchFullNames: Record<string, string> = {
-      'CSE': 'Computer Science Engineering',
-      'AI/ML': 'Artificial Intelligence & Machine Learning',
-      'IT': 'Information Technology',
-      'ECE': 'Electronics & Communication Engineering',
-      'Mechanical': 'Mechanical Engineering',
-      'Civil': 'Civil Engineering'
-    };
-    const fullName = branchFullNames[data.branch] || data.branch;
-    return (
-      <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 shadow-2xl font-sans text-xs space-y-1.5 min-w-[200px]">
-        <span className="font-extrabold text-zinc-200 block border-b border-zinc-900 pb-1">{fullName}</span>
-        <div className="space-y-1 pt-1 font-mono text-[10px]">
-          <div className="flex justify-between">
-            <span className="text-zinc-500">Placement Rate:</span>
-            <span className="text-emerald-400 font-bold">{data.rate}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-zinc-500">Placed Students:</span>
-            <span className="text-zinc-300 font-bold">{data.placed}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-zinc-500">Total Students:</span>
-            <span className="text-zinc-300">{data.total}</span>
-          </div>
-          <div className="flex justify-between border-t border-zinc-900/60 pt-1 mt-1 font-sans">
-            <span className="text-zinc-500">Status:</span>
-            <span className={`font-bold ${data.status === 'Excellent' ? 'text-emerald-400' : data.status === 'Good' ? 'text-blue-400' : 'text-amber-500'}`}>
-              {data.status}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -243,30 +202,30 @@ export default function AdminDashboardPage() {
                         <span className="text-[9px] text-zinc-550 block mt-0.5">Placement Cell Director</span>
                       </div>
                       <div className="py-1">
-                        <button 
-                          onClick={() => setProfileMenuOpen(false)}
-                          className="w-full text-left px-3 py-2 hover:bg-zinc-900/60 hover:text-zinc-250 transition-colors flex items-center gap-2 cursor-pointer"
+                        <button
+                          onClick={() => { setProfileMenuOpen(false); router.push('/admin/profile'); }}
+                          className="w-full text-left px-3 py-2 text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition-colors flex items-center gap-2 cursor-pointer"
                         >
-                          <User className="w-3.5 h-3.5 text-zinc-500" />
+                          <User className="w-3.5 h-3.5 text-zinc-400" />
                           <span>Profile</span>
                         </button>
-                        <button 
-                          onClick={() => setProfileMenuOpen(false)}
-                          className="w-full text-left px-3 py-2 hover:bg-zinc-900/60 hover:text-zinc-250 transition-colors flex items-center gap-2 cursor-pointer"
+                        <button
+                          onClick={() => { setProfileMenuOpen(false); router.push('/admin/settings'); }}
+                          className="w-full text-left px-3 py-2 text-zinc-300 hover:bg-zinc-900/60 hover:text-zinc-100 transition-colors flex items-center gap-2 cursor-pointer"
                         >
-                          <Settings className="w-3.5 h-3.5 text-zinc-500" />
+                          <Settings className="w-3.5 h-3.5 text-zinc-400" />
                           <span>Settings</span>
                         </button>
                       </div>
                       <div className="h-[1px] bg-zinc-900/60 my-1" />
-                      <button 
+                      <button
                         onClick={() => {
                           setProfileMenuOpen(false);
                           setLogoutModalOpen(true);
                         }}
-                        className="w-full text-left px-3 py-2 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-2 cursor-pointer"
+                        className="w-full text-left px-3 py-2 text-zinc-300 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-2 cursor-pointer"
                       >
-                        <LogOut className="w-3.5 h-3.5 text-zinc-500 group-hover:text-red-450" />
+                        <LogOut className="w-3.5 h-3.5 text-zinc-400" />
                         <span>Logout</span>
                       </button>
                     </motion.div>
@@ -370,36 +329,7 @@ export default function AdminDashboardPage() {
                 <span className="text-[10px] text-zinc-550 block mt-1">Specialization-wise callback conversion metric index</span>
               </div>
 
-              <div className="h-56 w-full pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={placementStatsByBranch} margin={{ bottom: 20 }}>
-                    <XAxis dataKey="branch" stroke="#a1a1aa" fontSize={12} fontWeight={700} tickLine={false} />
-                    <YAxis stroke="#a1a1aa" fontSize={12} fontWeight={700} tickLine={false} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)', radius: 6 }} />
-                    <Bar dataKey="rate" radius={[6, 6, 0, 0]} barSize={34} isAnimationActive={true} animationBegin={0} animationDuration={1000}>
-                      {placementStatsByBranch.map((entry, index) => {
-                        const hoverGlowClasses: Record<string, string> = {
-                          '#10b981': 'hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]',
-                          '#06b6d4': 'hover:drop-shadow-[0_0_12px_rgba(6,182,212,0.5)]',
-                          '#3b82f6': 'hover:drop-shadow-[0_0_12px_rgba(59,130,246,0.5)]',
-                          '#8b5cf6': 'hover:drop-shadow-[0_0_12px_rgba(139,92,246,0.5)]',
-                          '#f97316': 'hover:drop-shadow-[0_0_12px_rgba(249,115,22,0.5)]',
-                          '#ef4444': 'hover:drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]'
-                        };
-                        const glowClass = hoverGlowClasses[entry.color] || '';
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color} 
-                            fillOpacity={0.8} 
-                            className={`transition-all duration-300 hover:fill-opacity-100 hover:scale-y-[1.03] origin-bottom cursor-pointer ${glowClass}`}
-                          />
-                        );
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <AdminBranchChart />
             </div>
           </div>
 
