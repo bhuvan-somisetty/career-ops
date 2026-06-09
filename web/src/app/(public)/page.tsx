@@ -250,10 +250,6 @@ function Landing() {
   // ── Cursor as spring-smoothed motion values (viewport coords) ──
   const cvx = useMotionValue(-1000);
   const cvy = useMotionValue(-1000);
-  const sx = useSpring(cvx, { stiffness: 130, damping: 20, mass: 0.45 });
-  const sy = useSpring(cvy, { stiffness: 130, damping: 20, mass: 0.45 });
-  // Big, soft, aurora-style spotlight (two layered radials, emerald → cyan).
-  const spotlight = useMotionTemplate`radial-gradient(220px circle at ${sx}px ${sy}px, rgba(16,185,129,0.22), transparent 58%), radial-gradient(340px circle at ${sx}px ${sy}px, rgba(34,211,238,0.10), transparent 72%)`;
 
   // headline-local cursor coords for the illuminated text overlay
   const hx = useMotionValue(-9999);
@@ -369,12 +365,6 @@ function Landing() {
         {/* gentle vignette to keep edges cinematic, not flat-black */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,#020203_100%)]" />
       </div>
-
-      {/* Premium cursor-reactive aurora spotlight (spring-smoothed, screen blend) */}
-      <motion.div
-        className="fixed inset-0 pointer-events-none z-[1] mix-blend-screen"
-        style={{ background: spotlight }}
-      />
 
       {/* FLOATING PARTICLES */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">

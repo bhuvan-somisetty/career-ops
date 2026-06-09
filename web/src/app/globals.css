@@ -125,7 +125,7 @@ body {
   to   { transform: translateX(-50%); }
 }
 .animate-marquee {
-  animation: marquee 38s linear infinite;
+  animation: marquee 48s linear infinite;
   will-change: transform;
 }
 .marquee-group:hover .animate-marquee {
