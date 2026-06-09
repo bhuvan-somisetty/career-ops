@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     root: projectRoot,
   },
   outputFileTracingRoot: projectRoot,
+  // Keep Prisma's engine out of the bundler so route handlers load it at runtime.
+  serverExternalPackages: ['@prisma/client', 'prisma'],
   // Serve the captured product screenshots (in /public/showcase) as-is.
   images: { unoptimized: true },
 };

@@ -276,9 +276,14 @@ export default function AdminDashboardPage() {
             {/* Students list */}
             <div className="p-6 sm:p-8 rounded-2xl bg-zinc-950/45 border border-zinc-900 shadow-2xl backdrop-blur-md space-y-6 relative overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
-              <div>
-                <h3 className="font-extrabold text-xs text-zinc-350 uppercase tracking-wider font-mono">Student Placements Registry</h3>
-                <span className="text-[10px] text-zinc-550 block mt-1">Overview of student profiles processed by localized resume extraction engine</span>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-extrabold text-xs text-zinc-300 uppercase tracking-wider font-mono">Student Placements Registry</h3>
+                  <span className="text-[10px] text-zinc-500 block mt-1">Overview of student profiles processed by localized resume extraction engine</span>
+                </div>
+                <Link href="/admin/students" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold text-[11px] transition-colors cursor-pointer shrink-0 whitespace-nowrap">
+                  Manage Students <ArrowUpRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
 
               <div className="overflow-x-auto">

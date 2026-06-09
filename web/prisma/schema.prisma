@@ -1,0 +1,156 @@
+// Career Officer — Student Master Profile (normalized relational schema)
+// Local-first SQLite. Swap `provider`/`url` to Postgres for deployment.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id String @id @default(cuid())
+
+  // --- Personal information ---
+  firstName     String
+  middleName    String?
+  lastName      String
+  aadhaarNumber String?
+  gender        String?
+  nationality   String?
+  dateOfBirth   String?
+
+  // --- Address ---
+  address1 String?
+  address2 String?
+  city     String?
+  state    String?
+  district String?
+  pinCode  String?
+  country  String?
+
+  // --- Contact ---
+  email    String  @unique
+  phone    String?
+  altPhone String?
+
+  // --- Social ---
+  linkedinUrl String?
+  githubUrl   String?
+
+  // --- Professional summary ---
+  summary         String?
+  yearsExperience Float?
+
+  // --- Meta ---
+  profileCompleteness Int      @default(0)
+  resumeFileName      String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // --- Relations (normalized child entities) ---
+  education      Education[]
+  experience     Experience[]
+  projects       Project[]
+  certifications Certification[]
+  skills         Skill[]
+  softSkills     SoftSkill[]
+  achievements   Achievement[]
+  awards         Award[]
+}
+
+model Education {
+  id            String  @id @default(cuid())
+  studentId     String
+  student       Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  degree        String?
+  fieldOfStudy  String?
+  institution   String?
+  location      String?
+  dateOfPassing String?
+  cgpa          String?
+  percentage    String?
+  achievements  String?
+
+  @@index([studentId])
+}
+
+model Experience {
+  id               String  @id @default(cuid())
+  studentId        String
+  student          Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  jobTitle         String?
+  companyName      String?
+  location         String?
+  employmentType   String?
+  startDate        String?
+  endDate          String?
+  responsibilities String?
+  achievements     String?
+  technologies     String?
+
+  @@index([studentId])
+}
+
+model Project {
+  id           String  @id @default(cuid())
+  studentId    String
+  student      Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title        String?
+  description  String?
+  technologies String?
+
+  @@index([studentId])
+}
+
+model Certification {
+  id          String  @id @default(cuid())
+  studentId   String
+  student     Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String?
+  number      String?
+  description String?
+
+  @@index([studentId])
+}
+
+// Technical skills. `category` is one of:
+// language | framework | database | cloud | tool | other
+model Skill {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  category  String
+  name      String
+
+  @@index([studentId])
+}
+
+model SoftSkill {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  name      String
+
+  @@index([studentId])
+}
+
+model Achievement {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  text      String
+
+  @@index([studentId])
+}
+
+model Award {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  text      String
+
+  @@index([studentId])
+}
