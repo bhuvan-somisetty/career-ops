@@ -128,7 +128,19 @@ function calcDuration(start: string, end: string): string {
 }
 
 /* ── editor ──────────────────────────────────────────────────────────── */
-export default function StudentProfileEditor({ initial, studentId }: { initial: StudentProfileInput; studentId?: string }) {
+export default function StudentProfileEditor({
+  initial,
+  studentId,
+  backHref = '/admin/students',
+  backLabel = 'All students',
+  title,
+}: {
+  initial: StudentProfileInput;
+  studentId?: string;
+  backHref?: string;
+  backLabel?: string;
+  title?: string;
+}) {
   const router = useRouter();
   const isEdit = !!studentId;
   const [p, setP] = useState<StudentProfileInput>(initial);
@@ -209,10 +221,10 @@ export default function StudentProfileEditor({ initial, studentId }: { initial: 
       {/* Header / actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900/60 pb-5">
         <div>
-          <button onClick={() => router.push('/admin/students')} className="inline-flex items-center gap-2 text-[11px] font-mono text-zinc-500 hover:text-zinc-200 transition-colors mb-2 cursor-pointer">
-            <ArrowLeft className="w-3.5 h-3.5" /> All students
+          <button onClick={() => router.push(backHref)} className="inline-flex items-center gap-2 text-[11px] font-mono text-zinc-500 hover:text-zinc-200 transition-colors mb-2 cursor-pointer">
+            <ArrowLeft className="w-3.5 h-3.5" /> {backLabel}
           </button>
-          <h2 className="text-2xl font-black text-zinc-100 tracking-tight">{isEdit ? `Edit — ${fullName}` : 'Create Student'}</h2>
+          <h2 className="text-2xl font-black text-zinc-100 tracking-tight">{title ?? (isEdit ? `Edit — ${fullName}` : 'Create Student')}</h2>
         </div>
         <div className="flex items-center gap-3">
           {saved && <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono"><CheckCircle2 className="w-4 h-4" /> Saved</span>}
