@@ -41,6 +41,7 @@ import SmoothScroll from '@/components/SmoothScroll';
 import {
   siGoogle, siMeta, siNetflix, siAtlassian, siStripe, siUber, siAirbnb,
   siSpotify, siIntel, siNvidia, siCisco, siAccenture, siInfosys, siWipro,
+  siPaypal, siTcs, siGoldmansachs, siNbc, siNewyorktimes,
 } from 'simple-icons';
 
 /* ────────────────────────────────────────────────────────────
@@ -67,15 +68,22 @@ const trustLogos: { name: string; path?: string }[] = [
   { name: 'Intel', path: siIntel.path },
   { name: 'NVIDIA', path: siNvidia.path },
   { name: 'IBM' },
-  { name: 'PayPal' },
+  { name: 'PayPal', path: siPaypal.path },
   { name: 'Cisco', path: siCisco.path },
   { name: 'Accenture', path: siAccenture.path },
-  { name: 'TCS' },
+  { name: 'TCS', path: siTcs.path },
   { name: 'Infosys', path: siInfosys.path },
   { name: 'Wipro', path: siWipro.path },
-  { name: 'Goldman Sachs' },
+  { name: 'Goldman Sachs', path: siGoldmansachs.path },
   { name: 'JPMorgan' },
   { name: 'Morgan Stanley' },
+  { name: 'Forbes' },
+  { name: 'Yahoo' },
+  { name: 'MarketWatch' },
+  { name: 'Business Insider' },
+  { name: 'NBC', path: siNbc.path },
+  { name: 'MSN' },
+  { name: 'The New York Times', path: siNewyorktimes.path },
 ];
 
 const liveStats = [
@@ -498,13 +506,13 @@ function Landing() {
           <div className="marquee-group w-full relative overflow-hidden edge-fade-x">
             <div className="flex w-max animate-marquee items-center">
               {[...trustLogos, ...trustLogos].map((b, i) => (
-                <div key={i} className="mx-7 inline-flex items-center gap-2.5 text-zinc-500 hover:text-zinc-100 transition-colors duration-300 whitespace-nowrap">
+                <div key={i} className="mx-9 inline-flex items-center gap-3 text-zinc-500 hover:text-zinc-100 transition-colors duration-300 whitespace-nowrap">
                   {b.path && (
-                    <svg viewBox="0 0 24 24" aria-hidden className="w-5 h-5 fill-current shrink-0">
+                    <svg viewBox="0 0 24 24" aria-hidden className="w-7 h-7 fill-current shrink-0">
                       <path d={b.path} />
                     </svg>
                   )}
-                  <span className="text-lg font-semibold tracking-tight">{b.name}</span>
+                  <span className="text-xl font-semibold tracking-tight">{b.name}</span>
                 </div>
               ))}
             </div>
