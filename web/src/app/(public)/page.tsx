@@ -48,8 +48,14 @@ import {
    DATA
    ──────────────────────────────────────────────────────────── */
 
-// Enterprise trust logos. `icon` carries an authentic monochrome SVG path
-// (simple-icons) where available; the rest render as clean wordmark lockups.
+// Authentic monochrome LinkedIn glyph (24×24). simple-icons dropped LinkedIn
+// for trademark reasons, so we carry the official "in" mark inline instead.
+const siLinkedinPath =
+  'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z';
+
+// Enterprise trust logos. `path` carries an authentic monochrome SVG glyph
+// (simple-icons, or the inline LinkedIn mark) where available; the rest render
+// as clean wordmark lockups normalized to a single consistent type weight.
 const trustLogos: { name: string; path?: string }[] = [
   { name: 'Google', path: siGoogle.path },
   { name: 'Microsoft' },
@@ -63,7 +69,7 @@ const trustLogos: { name: string; path?: string }[] = [
   { name: 'Uber', path: siUber.path },
   { name: 'Airbnb', path: siAirbnb.path },
   { name: 'Spotify', path: siSpotify.path },
-  { name: 'LinkedIn' },
+  { name: 'LinkedIn', path: siLinkedinPath },
   { name: 'Oracle' },
   { name: 'Intel', path: siIntel.path },
   { name: 'NVIDIA', path: siNvidia.path },
@@ -506,13 +512,13 @@ function Landing() {
           <div className="marquee-group w-full relative overflow-hidden edge-fade-x">
             <div className="flex w-max animate-marquee items-center">
               {[...trustLogos, ...trustLogos].map((b, i) => (
-                <div key={i} className="mx-10 inline-flex items-center gap-3.5 text-zinc-500 hover:text-zinc-100 transition-colors duration-300 whitespace-nowrap">
+                <div key={i} className="mx-8 inline-flex items-center gap-2.5 text-zinc-500 hover:text-zinc-100 transition-colors duration-300 whitespace-nowrap">
                   {b.path && (
-                    <svg viewBox="0 0 24 24" aria-hidden className="w-9 h-9 fill-current shrink-0">
+                    <svg viewBox="0 0 24 24" aria-hidden className="w-10 h-10 fill-current shrink-0">
                       <path d={b.path} />
                     </svg>
                   )}
-                  <span className="text-2xl font-semibold tracking-tight">{b.name}</span>
+                  <span className="text-xl font-semibold tracking-tight leading-none">{b.name}</span>
                 </div>
               ))}
             </div>
