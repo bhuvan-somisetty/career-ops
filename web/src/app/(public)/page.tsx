@@ -506,13 +506,13 @@ function Landing() {
           <div className="marquee-group w-full relative overflow-hidden edge-fade-x">
             <div className="flex w-max animate-marquee items-center">
               {[...trustLogos, ...trustLogos].map((b, i) => (
-                <div key={i} className="mx-9 inline-flex items-center gap-3 text-zinc-500 hover:text-zinc-100 transition-colors duration-300 whitespace-nowrap">
+                <div key={i} className="mx-10 inline-flex items-center gap-3.5 text-zinc-500 hover:text-zinc-100 transition-colors duration-300 whitespace-nowrap">
                   {b.path && (
-                    <svg viewBox="0 0 24 24" aria-hidden className="w-7 h-7 fill-current shrink-0">
+                    <svg viewBox="0 0 24 24" aria-hidden className="w-9 h-9 fill-current shrink-0">
                       <path d={b.path} />
                     </svg>
                   )}
-                  <span className="text-xl font-semibold tracking-tight">{b.name}</span>
+                  <span className="text-2xl font-semibold tracking-tight">{b.name}</span>
                 </div>
               ))}
             </div>
