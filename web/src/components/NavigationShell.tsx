@@ -431,7 +431,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setLogoutModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 hover:text-zinc-50 hover:bg-zinc-800 text-xs font-bold transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-600"
                 >
                   Cancel
                 </button>
@@ -441,8 +441,9 @@ export default function NavigationShell({ children }: { children: React.ReactNod
                     localStorage.removeItem('career_officer_token');
                     router.push('/portal');
                   }}
-                  className="flex-1 py-2.5 rounded-xl bg-red-650 hover:bg-red-650 text-zinc-950 hover:text-zinc-150 font-bold text-xs transition-colors cursor-pointer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-500 font-bold text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400/60"
                 >
+                  <LogOut className="w-4 h-4" />
                   Logout
                 </button>
               </div>

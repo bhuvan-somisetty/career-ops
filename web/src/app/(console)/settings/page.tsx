@@ -248,7 +248,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => setLogoutModalOpen(true)}
-              className="px-4 py-2 rounded-lg bg-red-950/60 border border-red-900/40 hover:bg-red-650 hover:text-zinc-950 text-red-400 font-bold text-xs transition-colors cursor-pointer shrink-0"
+              className="px-4 py-2 rounded-lg bg-red-950/60 border border-red-900/40 hover:bg-red-600 hover:text-white text-red-400 font-bold text-xs transition-colors cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-red-400/50"
             >
               Log Out Console
             </button>
@@ -289,7 +289,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setLogoutModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-zinc-900 text-zinc-400 hover:text-zinc-200 text-xs font-bold transition-colors cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 hover:text-zinc-50 hover:bg-zinc-800 text-xs font-bold transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-600"
                 >
                   Cancel
                 </button>
@@ -300,8 +300,9 @@ export default function SettingsPage() {
                     localStorage.removeItem('career_officer_token');
                     router.push('/portal');
                   }}
-                  className="flex-1 py-2.5 rounded-xl bg-red-650 hover:bg-red-650 text-zinc-950 hover:text-zinc-100 font-bold text-xs transition-colors cursor-pointer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-500 font-bold text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400/60"
                 >
+                  <LogOut className="w-4 h-4" />
                   Confirm Log Out
                 </button>
               </div>
