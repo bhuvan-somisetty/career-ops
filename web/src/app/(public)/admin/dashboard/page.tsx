@@ -170,7 +170,7 @@ export default function AdminDashboardPage() {
   if (!authorized) return null;
 
   return (
-    <div className="min-h-screen bg-[#050507] text-zinc-100 py-10 relative overflow-hidden select-none">
+    <div className="min-h-screen bg-[#050507] text-zinc-100 py-10 relative overflow-clip select-none">
       {/* Background Auroras */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <motion.div

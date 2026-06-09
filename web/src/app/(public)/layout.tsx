@@ -16,10 +16,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   );
 
   return (
-    <div className="min-h-screen flex flex-col w-full bg-[#050507] text-zinc-100 overflow-x-hidden relative">
-      {/* Background glowing gradients */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[160px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col w-full bg-[#050507] text-zinc-100 overflow-x-clip relative">
+      {/* Background glowing gradients — pinned to the viewport in a clipped
+          fixed layer so they never extend the scrollable area (otherwise the
+          bottom glow added ~500px of empty space below the footer). */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/5 rounded-full blur-[160px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/5 rounded-full blur-[160px]" />
+      </div>
 
       {/* Navigation Header */}
       <header className="w-full border-b border-zinc-900/50 bg-[#050507]/60 backdrop-blur-md sticky top-0 z-50 px-6 py-4">

@@ -36,6 +36,47 @@ interface Application {
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#ef4444', '#71717a'];
 
+// Professional, consistent tooltip showing exact counts AND percentages.
+interface ProTooltipProps {
+  active?: boolean;
+  payload?: { value: number; payload: Record<string, unknown> }[];
+  label?: string | number;
+  valueKey: string;
+  valueLabel: string;
+  denom: number;
+  denomLabel: string;
+  accent?: string;
+  nameKey?: string;
+}
+
+const ProTooltip = ({
+  active, payload, label, valueKey, valueLabel, denom, denomLabel, accent = '#10b981', nameKey,
+}: ProTooltipProps) => {
+  if (!active || !payload || !payload.length) return null;
+  const row = payload[0].payload as Record<string, unknown>;
+  const value = Number(row[valueKey] ?? payload[0].value ?? 0);
+  const title = (nameKey ? row[nameKey] : label) ?? label;
+  const pct = denom > 0 ? ((value / denom) * 100).toFixed(1) : '0.0';
+  return (
+    <div className="px-3.5 py-3 rounded-xl bg-zinc-950/95 border border-zinc-800 shadow-2xl font-sans text-xs space-y-2 min-w-[180px] backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-zinc-900 pb-1.5">
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: accent }} />
+        <span className="font-bold text-zinc-100">{String(title)}</span>
+      </div>
+      <div className="space-y-1 font-mono text-[11px]">
+        <div className="flex justify-between gap-6">
+          <span className="text-zinc-500">{valueLabel}</span>
+          <span className="text-zinc-100 font-bold">{value}</span>
+        </div>
+        <div className="flex justify-between gap-6">
+          <span className="text-zinc-500">{denomLabel}</span>
+          <span className="font-bold" style={{ color: accent }}>{pct}%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function AnalyticsPage() {
   const [mounted, setMounted] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -114,6 +155,9 @@ export default function AnalyticsPage() {
   ].filter(arch => arch.value > 0);
 
   // Conversion Calculations
+  const funnelTop = funnelData[0]?.value || 0;
+  const scoreTotal = scoreDistribution.reduce((s, d) => s + d.count, 0);
+
   const interviewRate = netTotal > 0 ? Math.round(((interview + offer) / netTotal) * 100) : 0;
   const responseRate = netTotal > 0 ? Math.round(((screening + interview + offer) / netTotal) * 100) : 0;
   const offerRate = (applied + screening + interview + offer) > 0 ? Math.round((offer / (applied + screening + interview + offer)) * 100) : 0;
@@ -174,14 +218,15 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={funnelData} layout="vertical">
                 <XAxis type="number" stroke="#52525b" fontSize={9} tickLine={false} />
-                <YAxis dataKey="name" type="category" stroke="#52525b" fontSize={10} tickLine={false} />
+                <YAxis dataKey="name" type="category" stroke="#52525b" fontSize={10} tickLine={false} width={70} />
                 <Tooltip
-                  contentStyle={{
-                    background: '#09090b',
-                    borderColor: '#27272a',
-                    borderRadius: '8px',
-                    fontSize: '11px'
-                  }}
+                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  content={
+                    <ProTooltip
+                      valueKey="value" valueLabel="Applications" nameKey="name"
+                      denom={funnelTop} denomLabel="of saved jobs" accent="#10b981"
+                    />
+                  }
                 />
                 <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]} barSize={18} />
               </BarChart>
@@ -200,14 +245,15 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={scoreDistribution}>
                 <XAxis dataKey="score" stroke="#52525b" fontSize={10} tickLine={false} />
-                <YAxis stroke="#52525b" fontSize={10} tickLine={false} />
+                <YAxis stroke="#52525b" fontSize={10} tickLine={false} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{
-                    background: '#09090b',
-                    borderColor: '#27272a',
-                    borderRadius: '8px',
-                    fontSize: '11px'
-                  }}
+                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  content={
+                    <ProTooltip
+                      valueKey="count" valueLabel="Evaluations" nameKey="score"
+                      denom={scoreTotal} denomLabel="of all evals" accent="#3b82f6"
+                    />
+                  }
                 />
                 <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={24} />
               </BarChart>
@@ -241,12 +287,12 @@ export default function AnalyticsPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        background: '#09090b',
-                        borderColor: '#27272a',
-                        borderRadius: '8px',
-                        fontSize: '11px'
-                      }}
+                      content={
+                        <ProTooltip
+                          valueKey="value" valueLabel="Opportunities" nameKey="name"
+                          denom={total} denomLabel="of all JDs" accent="#8b5cf6"
+                        />
+                      }
                     />
                   </PieChart>
                 </ResponsiveContainer>

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CurrencyProvider } from "@/context/CurrencyContext";
-import SmoothScroll from "@/components/SmoothScroll";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,9 +35,7 @@ export default function RootLayout({
         <div className="grid-bg fixed inset-0 pointer-events-none z-0 opacity-40" />
         <div className="w-full min-h-screen relative z-10 font-sans flex flex-col">
           <CurrencyProvider>
-            <SmoothScroll>
-              {children}
-            </SmoothScroll>
+            {children}
           </CurrencyProvider>
         </div>
       </body>
