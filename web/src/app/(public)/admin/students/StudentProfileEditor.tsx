@@ -236,7 +236,11 @@ export default function StudentProfileEditor({
         firstName: parsed.firstName || prev.firstName,
         middleName: parsed.middleName ?? prev.middleName,
         lastName: parsed.lastName || prev.lastName,
-        email: parsed.email || prev.email,
+        // Never overwrite an email the record already has. The offline mock (and
+        // some real extractions) return a constant address that would collide
+        // with the unique-email constraint and fail the profile save. Fill it
+        // only when the field is currently empty; the user can edit it after.
+        email: prev.email || parsed.email || '',
         phone: parsed.phone || prev.phone,
         linkedinUrl: parsed.linkedinUrl || prev.linkedinUrl,
         githubUrl: parsed.githubUrl || prev.githubUrl,
@@ -277,11 +281,25 @@ export default function StudentProfileEditor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(p),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Save failed.'); return; }
+      const data = await res.json().catch(() => ({}));
+      const profileError = res.ok ? '' : (data.error || 'Profile save failed.');
 
-      // Store the resume binary + metadata together with the profile save.
-      if (isEdit && studentId && pendingFileRef.current) {
+      // Create mode: we need the new id before any file can be attached, so a
+      // failed creation has nothing to persist media against — stop here.
+      if (!isEdit) {
+        if (profileError) { setError(profileError); return; }
+        setSaved(true);
+        if (data.id) router.push(`/admin/students/${data.id}`);
+        return;
+      }
+
+      // Edit mode: persist the resume + picture INDEPENDENTLY of the profile
+      // result. A profile validation error (e.g. a duplicate email) must never
+      // silently drop the file the user just uploaded. Errors are aggregated.
+      const errors: string[] = [];
+      if (profileError) errors.push(profileError);
+
+      if (studentId && pendingFileRef.current) {
         const rfd = new FormData();
         rfd.append('file', pendingFileRef.current);
         rfd.append('source', pendingSourceRef.current);
@@ -293,12 +311,12 @@ export default function StudentProfileEditor({
           setPendingName(null);
         } else {
           const rj = await rr.json().catch(() => ({}));
-          setError(rj.error || 'Profile saved, but the resume could not be stored.');
+          errors.push(rj.error || 'The resume could not be stored.');
         }
       }
 
       // Commit the profile picture (upload or removal) with the same Save.
-      if (isEdit && studentId && pendingAvatarRef.current) {
+      if (studentId && pendingAvatarRef.current) {
         const afd = new FormData();
         afd.append('file', pendingAvatarRef.current);
         const ar = await fetch(`/api/students/${studentId}/avatar`, { method: 'POST', body: afd });
@@ -312,9 +330,9 @@ export default function StudentProfileEditor({
           setAvatarVersion((v) => v + 1);
         } else {
           const aj = await ar.json().catch(() => ({}));
-          setError(aj.error || 'Profile saved, but the picture could not be stored.');
+          errors.push(aj.error || 'The picture could not be stored.');
         }
-      } else if (isEdit && studentId && avatarRemoved && avatar?.hasFile) {
+      } else if (studentId && avatarRemoved && avatar?.hasFile) {
         const ar = await fetch(`/api/students/${studentId}/avatar`, { method: 'DELETE' });
         if (ar.ok) {
           const aj = await ar.json();
@@ -323,13 +341,16 @@ export default function StudentProfileEditor({
           setAvatarVersion((v) => v + 1);
         } else {
           const aj = await ar.json().catch(() => ({}));
-          setError(aj.error || 'Profile saved, but the picture could not be removed.');
+          errors.push(aj.error || 'The picture could not be removed.');
         }
       }
 
-      setSaved(true);
-      if (!isEdit && data.id) router.push(`/admin/students/${data.id}`);
-      else setTimeout(() => setSaved(false), 2500);
+      if (errors.length) {
+        setError(errors.join(' '));
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      }
     } catch {
       setError('Network error while saving.');
     } finally {
