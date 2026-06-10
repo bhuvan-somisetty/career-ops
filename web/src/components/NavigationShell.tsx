@@ -39,6 +39,8 @@ export default function NavigationShell({ children }: { children: React.ReactNod
     name: 'Jane Smith',
     headline: 'AI Platform & LLMOps Engineer'
   });
+  // The logged-in student's profile picture (falls back to initials when absent).
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -52,7 +54,20 @@ export default function NavigationShell({ children }: { children: React.ReactNod
         }
       })
       .catch(() => {});
-  }, []);
+
+    // Resolve the student's stored avatar from the same record the profile uses.
+    const studentId = localStorage.getItem('career_officer_student_id');
+    if (studentId) {
+      fetch(`/api/students/${studentId}`)
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => {
+          if (data?.avatar?.hasFile) {
+            setAvatarUrl(`/api/students/${studentId}/avatar?v=${encodeURIComponent(data.avatar.uploadedAt || '')}`);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [pathname]);
 
   const navGroups = [
     {
@@ -156,9 +171,14 @@ export default function NavigationShell({ children }: { children: React.ReactNod
             className="flex items-center justify-between gap-3 p-1.5 rounded-xl hover:bg-zinc-900/40 cursor-pointer transition-colors duration-155 select-none overflow-hidden"
           >
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-emerald-400 border border-zinc-850 shrink-0">
-                {profile.name.charAt(0)}
-              </div>
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-zinc-850 shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-emerald-400 border border-zinc-850 shrink-0">
+                  {profile.name.charAt(0)}
+                </div>
+              )}
               <div className="overflow-hidden">
                 <span className="font-semibold text-xs text-zinc-200 block truncate">{profile.name}</span>
                 <span className="text-[9px] text-zinc-550 block truncate font-mono">{profile.headline}</span>
@@ -289,9 +309,14 @@ export default function NavigationShell({ children }: { children: React.ReactNod
 
               <div className="border-t border-zinc-900 pt-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-emerald-400 border border-zinc-850">
-                    {profile.name.charAt(0)}
-                  </div>
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-zinc-850" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-emerald-400 border border-zinc-850">
+                      {profile.name.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <span className="font-semibold text-xs text-zinc-200 block truncate">{profile.name}</span>
                     <span className="text-[9px] text-zinc-500 block truncate max-w-[150px] font-mono">{profile.headline}</span>

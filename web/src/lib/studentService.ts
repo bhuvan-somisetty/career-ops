@@ -122,6 +122,140 @@ export async function deleteStudent(id: string): Promise<void> {
   await prisma.student.delete({ where: { id } });
 }
 
+/* ── Resume metadata + binary (stored in StudentResumeFile) ──────────── */
+
+export async function getResumeMeta(id: string): Promise<import('@/types/student').ResumeMeta | null> {
+  const s = await prisma.student.findUnique({
+    where: { id },
+    select: {
+      resumeFileName: true,
+      resumeMimeType: true,
+      resumeSource: true,
+      resumeUploadedAt: true,
+      updatedAt: true,
+      resumeFile: { select: { id: true } },
+    },
+  });
+  if (!s) return null;
+  return {
+    fileName: s.resumeFileName,
+    mimeType: s.resumeMimeType,
+    source: s.resumeSource,
+    uploadedAt: s.resumeUploadedAt ? s.resumeUploadedAt.toISOString() : null,
+    updatedAt: s.updatedAt.toISOString(),
+    hasFile: !!s.resumeFile,
+  };
+}
+
+export async function storeResume(
+  id: string,
+  file: { fileName: string; mimeType: string; source: string; data: Buffer }
+): Promise<void> {
+  // Prisma's Bytes field expects a Uint8Array backed by a plain ArrayBuffer.
+  const bytes = new Uint8Array(file.data);
+  // Upsert the binary, then stamp metadata on the student (replaces previous).
+  await prisma.$transaction([
+    prisma.studentResumeFile.upsert({
+      where: { studentId: id },
+      create: { studentId: id, data: bytes },
+      update: { data: bytes },
+    }),
+    prisma.student.update({
+      where: { id },
+      data: {
+        resumeFileName: file.fileName,
+        resumeMimeType: file.mimeType,
+        resumeSource: file.source,
+        resumeUploadedAt: new Date(),
+      },
+    }),
+  ]);
+}
+
+export async function getResumeFile(
+  id: string
+): Promise<{ fileName: string; mimeType: string; data: Buffer } | null> {
+  const s = await prisma.student.findUnique({
+    where: { id },
+    select: { resumeFileName: true, resumeMimeType: true, resumeFile: { select: { data: true } } },
+  });
+  if (!s || !s.resumeFile) return null;
+  return {
+    fileName: s.resumeFileName || 'resume',
+    mimeType: s.resumeMimeType || 'application/octet-stream',
+    data: Buffer.from(s.resumeFile.data),
+  };
+}
+
+/* ── Profile picture metadata + binary (stored in StudentAvatarFile) ──── */
+
+export async function getAvatarMeta(id: string): Promise<import('@/types/student').AvatarMeta | null> {
+  const s = await prisma.student.findUnique({
+    where: { id },
+    select: {
+      avatarFileName: true,
+      avatarMimeType: true,
+      avatarUploadedAt: true,
+      avatarFile: { select: { id: true } },
+    },
+  });
+  if (!s) return null;
+  return {
+    fileName: s.avatarFileName,
+    mimeType: s.avatarMimeType,
+    uploadedAt: s.avatarUploadedAt ? s.avatarUploadedAt.toISOString() : null,
+    hasFile: !!s.avatarFile,
+  };
+}
+
+export async function storeAvatar(
+  id: string,
+  file: { fileName: string; mimeType: string; data: Buffer }
+): Promise<void> {
+  const bytes = new Uint8Array(file.data);
+  await prisma.$transaction([
+    prisma.studentAvatarFile.upsert({
+      where: { studentId: id },
+      create: { studentId: id, data: bytes },
+      update: { data: bytes },
+    }),
+    prisma.student.update({
+      where: { id },
+      data: {
+        avatarFileName: file.fileName,
+        avatarMimeType: file.mimeType,
+        avatarUploadedAt: new Date(),
+      },
+    }),
+  ]);
+}
+
+export async function getAvatarFile(
+  id: string
+): Promise<{ fileName: string; mimeType: string; data: Buffer } | null> {
+  const s = await prisma.student.findUnique({
+    where: { id },
+    select: { avatarFileName: true, avatarMimeType: true, avatarFile: { select: { data: true } } },
+  });
+  if (!s || !s.avatarFile) return null;
+  return {
+    fileName: s.avatarFileName || 'avatar',
+    mimeType: s.avatarMimeType || 'application/octet-stream',
+    data: Buffer.from(s.avatarFile.data),
+  };
+}
+
+export async function removeAvatar(id: string): Promise<void> {
+  // Deleting the blob row is enough to clear the picture; also clear metadata.
+  await prisma.$transaction([
+    prisma.studentAvatarFile.deleteMany({ where: { studentId: id } }),
+    prisma.student.update({
+      where: { id },
+      data: { avatarFileName: null, avatarMimeType: null, avatarUploadedAt: null },
+    }),
+  ]);
+}
+
 export function toProfileInput(s: StudentRecord): StudentProfileInput {
   return {
     firstName: s.firstName,

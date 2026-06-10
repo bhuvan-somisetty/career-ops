@@ -6,13 +6,15 @@ import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import StudentProfileEditor from '../StudentProfileEditor';
 import { useAdminAuth } from '../../useAdminAuth';
-import type { StudentProfileInput } from '@/types/student';
+import type { StudentProfileInput, ResumeMeta, AvatarMeta } from '@/types/student';
 
 export default function EditStudentPage() {
   const { authorized, loading: authLoading } = useAdminAuth();
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const [profile, setProfile] = useState<StudentProfileInput | null>(null);
+  const [resume, setResume] = useState<ResumeMeta | null>(null);
+  const [avatar, setAvatar] = useState<AvatarMeta | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'notfound'>('loading');
 
   useEffect(() => {
@@ -22,6 +24,8 @@ export default function EditStudentPage() {
         if (!res.ok) { setState('notfound'); return; }
         const data = await res.json();
         setProfile(data.profile);
+        setResume((data.resume as ResumeMeta) ?? null);
+        setAvatar((data.avatar as AvatarMeta) ?? null);
         setState('ready');
       })
       .catch(() => setState('notfound'));
@@ -41,7 +45,7 @@ export default function EditStudentPage() {
           <Link href="/admin/students" className="inline-block text-[11px] font-mono text-blue-400 hover:text-blue-300">← Back to all students</Link>
         </div>
       )}
-      {state === 'ready' && profile && id && <StudentProfileEditor initial={profile} studentId={id} />}
+      {state === 'ready' && profile && id && <StudentProfileEditor initial={profile} studentId={id} resumeMeta={resume} avatarMeta={avatar} />}
     </div>
   );
 }

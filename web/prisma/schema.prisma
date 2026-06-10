@@ -46,9 +46,20 @@ model Student {
 
   // --- Meta ---
   profileCompleteness Int      @default(0)
-  resumeFileName      String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+
+  // --- Resume metadata (the binary lives in StudentResumeFile) ---
+  resumeFileName   String?
+  resumeMimeType   String?
+  resumeSource     String? // e.g. "gemini" | "mock" | "upload"
+  resumeUploadedAt DateTime?
+
+  // --- Profile picture metadata (the binary lives in StudentAvatarFile) ---
+  avatarFileName   String?
+  avatarMimeType   String?
+  avatarUploadedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // --- Relations (normalized child entities) ---
   education      Education[]
@@ -59,6 +70,30 @@ model Student {
   softSkills     SoftSkill[]
   achievements   Achievement[]
   awards         Award[]
+  resumeFile     StudentResumeFile?
+  avatarFile     StudentAvatarFile?
+}
+
+// One-to-one binary store for the uploaded resume. Kept separate so profile/
+// list queries never load the blob; only the View/Download route reads it.
+model StudentResumeFile {
+  id        String   @id @default(cuid())
+  studentId String   @unique
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  data      Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One-to-one binary store for the profile picture. Same rationale as the
+// resume blob: list/profile queries never load it, only the image route does.
+model StudentAvatarFile {
+  id        String   @id @default(cuid())
+  studentId String   @unique
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  data      Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Education {

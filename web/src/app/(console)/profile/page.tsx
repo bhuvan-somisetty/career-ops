@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import StudentProfileEditor from '@/app/(public)/admin/students/StudentProfileEditor';
-import { emptyProfile, type StudentProfileInput } from '@/types/student';
+import { emptyProfile, type StudentProfileInput, type ResumeMeta, type AvatarMeta } from '@/types/student';
 
 // The logged-in student's master-profile record id is kept in localStorage
 // (student auth is a mock, so there is no server session to derive it from).
@@ -13,6 +13,8 @@ const STUDENT_ID_KEY = 'career_officer_student_id';
 export default function ProfilePage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [profile, setProfile] = useState<StudentProfileInput | null>(null);
+  const [resume, setResume] = useState<ResumeMeta | null>(null);
+  const [avatar, setAvatar] = useState<AvatarMeta | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [err, setErr] = useState('');
 
@@ -30,6 +32,8 @@ export default function ProfilePage() {
             if (!cancelled) {
               setStudentId(existing);
               setProfile(data.profile as StudentProfileInput);
+              setResume((data.resume as ResumeMeta) ?? null);
+              setAvatar((data.avatar as AvatarMeta) ?? null);
               setState('ready');
             }
             return;
@@ -93,6 +97,8 @@ export default function ProfilePage() {
     <StudentProfileEditor
       initial={profile!}
       studentId={studentId!}
+      resumeMeta={resume}
+      avatarMeta={avatar}
       backHref="/dashboard"
       backLabel="Dashboard"
       title="My Profile"

@@ -95,6 +95,22 @@ export interface StudentProfileInput {
   awards: string[];
 }
 
+export interface ResumeMeta {
+  fileName: string | null;
+  mimeType: string | null;
+  source: string | null;
+  uploadedAt: string | null;
+  updatedAt: string | null;
+  hasFile: boolean;
+}
+
+export interface AvatarMeta {
+  fileName: string | null;
+  mimeType: string | null;
+  uploadedAt: string | null;
+  hasFile: boolean;
+}
+
 export interface StudentSummary {
   id: string;
   firstName: string;

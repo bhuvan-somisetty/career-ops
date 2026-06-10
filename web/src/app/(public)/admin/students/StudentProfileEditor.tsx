@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Upload, Plus, Trash2, Save, ArrowLeft, Loader2, X, Sparkles, CheckCircle2, AlertTriangle,
+  FileText, Eye, Download, RefreshCw, Camera, ImageOff,
 } from 'lucide-react';
 import {
-  StudentProfileInput, ParsedProfile, SkillCategory, SKILL_CATEGORIES, SKILL_CATEGORY_LABELS,
+  StudentProfileInput, ParsedProfile, ResumeMeta, AvatarMeta, SkillCategory, SKILL_CATEGORIES, SKILL_CATEGORY_LABELS,
 } from '@/types/student';
 
 /* ── small field primitives ─────────────────────────────────────────── */
@@ -127,6 +128,12 @@ function calcDuration(start: string, end: string): string {
   return [y ? `${y} yr` : '', months ? `${months} mo` : ''].filter(Boolean).join(' ') || '< 1 mo';
 }
 
+function fmtDate(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 /* ── editor ──────────────────────────────────────────────────────────── */
 export default function StudentProfileEditor({
   initial,
@@ -134,12 +141,16 @@ export default function StudentProfileEditor({
   backHref = '/admin/students',
   backLabel = 'All students',
   title,
+  resumeMeta = null,
+  avatarMeta = null,
 }: {
   initial: StudentProfileInput;
   studentId?: string;
   backHref?: string;
   backLabel?: string;
   title?: string;
+  resumeMeta?: ResumeMeta | null;
+  avatarMeta?: AvatarMeta | null;
 }) {
   const router = useRouter();
   const isEdit = !!studentId;
@@ -150,6 +161,64 @@ export default function StudentProfileEditor({
   const [uploading, setUploading] = useState(false);
   const [extractNote, setExtractNote] = useState<{ kind: 'gemini' | 'mock'; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Resume management (edit mode only — needs an existing student id to attach to).
+  const [resume, setResume] = useState<ResumeMeta | null>(resumeMeta);
+  const [pendingName, setPendingName] = useState<string | null>(null);
+  const pendingFileRef = useRef<File | null>(null);
+  const pendingSourceRef = useRef<string>('upload');
+
+  // Profile picture management (edit mode only). Upload/remove are deferred to
+  // Save so the picture commits together with the rest of the profile.
+  const [avatar, setAvatar] = useState<AvatarMeta | null>(avatarMeta);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const pendingAvatarRef = useRef<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  // Bust the no-store image cache after a successful save so a replacement shows.
+  const [avatarVersion, setAvatarVersion] = useState(0);
+
+  // Revoke the object URL when the preview changes or the component unmounts.
+  useEffect(() => () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview); }, [avatarPreview]);
+
+  const AVATAR_TYPES = /\.(jpe?g|png|webp)$/i;
+  function handleAvatarSelect(file: File) {
+    setAvatarError('');
+    const mime = file.type || '';
+    if (!/^image\/(jpeg|png|webp)$/.test(mime) && !AVATAR_TYPES.test(file.name)) {
+      setAvatarError('Only JPG, JPEG, PNG, or WEBP images are allowed.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('Image must be 5 MB or smaller.');
+      return;
+    }
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    pendingAvatarRef.current = file;
+    setAvatarPreview(URL.createObjectURL(file));
+    setAvatarRemoved(false);
+  }
+
+  function clearAvatar() {
+    setAvatarError('');
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(null);
+    pendingAvatarRef.current = null;
+    // Only flag a server-side removal if there is a stored image to delete.
+    setAvatarRemoved(!!avatar?.hasFile);
+  }
+
+  // What the picture card should render right now.
+  const storedAvatarUrl = avatar?.hasFile && !avatarRemoved && studentId
+    ? `/api/students/${studentId}/avatar?v=${avatarVersion}`
+    : null;
+  const shownAvatar = avatarPreview || storedAvatarUrl;
+  const initials = useMemo(
+    () => `${(p.firstName[0] || '').toUpperCase()}${(p.lastName[0] || '').toUpperCase()}` || '?',
+    [p.firstName, p.lastName]
+  );
+  const avatarPending = !!pendingAvatarRef.current || (avatarRemoved && !!avatar?.hasFile);
 
   const set = <K extends keyof StudentProfileInput>(k: K, v: StudentProfileInput[K]) => setP((prev) => ({ ...prev, [k]: v }));
 
@@ -187,6 +256,12 @@ export default function StudentProfileEditor({
           ? { kind: 'gemini', text: 'Extracted with Gemini. Review every field below — all values are editable.' }
           : { kind: 'mock', text: 'Offline sample populated (set GEMINI_API_KEY for real extraction). Review and edit before saving.' }
       );
+      // In edit mode, hold the file so it is stored (and metadata stamped) on Save.
+      if (isEdit) {
+        pendingFileRef.current = file;
+        pendingSourceRef.current = data.source || 'upload';
+        setPendingName(file.name);
+      }
     } catch {
       setError('Resume extraction failed. You can still fill the form manually.');
     } finally {
@@ -204,6 +279,54 @@ export default function StudentProfileEditor({
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Save failed.'); return; }
+
+      // Store the resume binary + metadata together with the profile save.
+      if (isEdit && studentId && pendingFileRef.current) {
+        const rfd = new FormData();
+        rfd.append('file', pendingFileRef.current);
+        rfd.append('source', pendingSourceRef.current);
+        const rr = await fetch(`/api/students/${studentId}/resume`, { method: 'POST', body: rfd });
+        if (rr.ok) {
+          const rj = await rr.json();
+          setResume(rj.resume as ResumeMeta);
+          pendingFileRef.current = null;
+          setPendingName(null);
+        } else {
+          const rj = await rr.json().catch(() => ({}));
+          setError(rj.error || 'Profile saved, but the resume could not be stored.');
+        }
+      }
+
+      // Commit the profile picture (upload or removal) with the same Save.
+      if (isEdit && studentId && pendingAvatarRef.current) {
+        const afd = new FormData();
+        afd.append('file', pendingAvatarRef.current);
+        const ar = await fetch(`/api/students/${studentId}/avatar`, { method: 'POST', body: afd });
+        if (ar.ok) {
+          const aj = await ar.json();
+          setAvatar(aj.avatar as AvatarMeta);
+          pendingAvatarRef.current = null;
+          if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+          setAvatarPreview(null);
+          setAvatarRemoved(false);
+          setAvatarVersion((v) => v + 1);
+        } else {
+          const aj = await ar.json().catch(() => ({}));
+          setError(aj.error || 'Profile saved, but the picture could not be stored.');
+        }
+      } else if (isEdit && studentId && avatarRemoved && avatar?.hasFile) {
+        const ar = await fetch(`/api/students/${studentId}/avatar`, { method: 'DELETE' });
+        if (ar.ok) {
+          const aj = await ar.json();
+          setAvatar(aj.avatar as AvatarMeta);
+          setAvatarRemoved(false);
+          setAvatarVersion((v) => v + 1);
+        } else {
+          const aj = await ar.json().catch(() => ({}));
+          setError(aj.error || 'Profile saved, but the picture could not be removed.');
+        }
+      }
+
       setSaved(true);
       if (!isEdit && data.id) router.push(`/admin/students/${data.id}`);
       else setTimeout(() => setSaved(false), 2500);
@@ -224,7 +347,19 @@ export default function StudentProfileEditor({
           <button onClick={() => router.push(backHref)} className="inline-flex items-center gap-2 text-[11px] font-mono text-zinc-500 hover:text-zinc-200 transition-colors mb-2 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /> {backLabel}
           </button>
-          <h2 className="text-2xl font-black text-zinc-100 tracking-tight">{title ?? (isEdit ? `Edit — ${fullName}` : 'Create Student')}</h2>
+          <div className="flex items-center gap-3">
+            {isEdit && (
+              shownAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={shownAvatar} alt="Profile picture" className="w-10 h-10 rounded-full object-cover border border-zinc-700 shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-sm font-black text-blue-300 shrink-0">
+                  {initials}
+                </div>
+              )
+            )}
+            <h2 className="text-2xl font-black text-zinc-100 tracking-tight">{title ?? (isEdit ? `Edit — ${fullName}` : 'Create Student')}</h2>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {saved && <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-mono"><CheckCircle2 className="w-4 h-4" /> Saved</span>}
@@ -240,20 +375,159 @@ export default function StudentProfileEditor({
         </div>
       )}
 
-      {/* Resume upload / auto-populate */}
-      <Section title="Resume Extraction" desc="Upload a PDF/DOCX/TXT to auto-populate the professional profile. Every extracted field stays editable.">
-        <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs font-semibold hover:bg-blue-500/15 transition-colors cursor-pointer disabled:opacity-60">
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} {isEdit ? 'Reprocess Resume' : 'Upload Resume'}
-          </button>
-          {extractNote && (
-            <span className={`inline-flex items-center gap-1.5 text-[11px] ${extractNote.kind === 'gemini' ? 'text-emerald-400' : 'text-amber-400'}`}>
-              <Sparkles className="w-3.5 h-3.5" /> {extractNote.text}
-            </span>
-          )}
-        </div>
-      </Section>
+      {/* Shared hidden file input (PDF / DOC / DOCX) */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
+      />
+
+      {/* Hidden image input (JPG / JPEG / PNG / WEBP) */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarSelect(f); e.target.value = ''; }}
+      />
+
+      {/* Profile picture management (edit mode only — needs a student id to attach to) */}
+      {isEdit && (
+        <Section title="Profile Picture" desc="Upload a photo (JPG, PNG, or WEBP). It appears across your profile and navigation. Changes apply when you Save.">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                {shownAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={shownAvatar} alt="Profile picture" className="w-16 h-16 rounded-full object-cover border border-zinc-700 shrink-0" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/25 flex items-center justify-center text-lg font-black text-blue-300 shrink-0">
+                    {initials}
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <div className="text-sm font-bold text-zinc-100">
+                    {avatarPreview ? (pendingAvatarRef.current?.name || 'New photo') : avatar?.hasFile && !avatarRemoved ? (avatar.fileName || 'Profile picture') : 'No picture uploaded'}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-mono text-zinc-500">
+                    <span>Uploaded: {fmtDate(avatar?.uploadedAt)}</span>
+                    <span className={avatarPending ? 'text-amber-400' : avatar?.hasFile && !avatarRemoved ? 'text-emerald-400' : 'text-zinc-500'}>
+                      Status: {avatarPreview ? 'Pending save' : avatarRemoved ? 'Removal pending save' : avatar?.hasFile ? 'Stored' : 'None'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={storedAvatarUrl ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-disabled={!storedAvatarUrl}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${storedAvatarUrl ? 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer' : 'border-zinc-800 text-zinc-600 pointer-events-none opacity-50'}`}
+                >
+                  <Eye className="w-3.5 h-3.5" /> View
+                </a>
+                <button type="button" onClick={() => avatarInputRef.current?.click()} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors cursor-pointer">
+                  <Camera className="w-3.5 h-3.5" /> {avatar?.hasFile && !avatarRemoved ? 'Replace' : 'Upload'}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearAvatar}
+                  disabled={!shownAvatar && !avatarRemoved}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-red-400 hover:bg-red-500/5 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-zinc-300"
+                >
+                  <ImageOff className="w-3.5 h-3.5" /> Remove
+                </button>
+              </div>
+            </div>
+            {(avatarError || avatarPending) && (
+              <div className="mt-4 pt-4 border-t border-zinc-800/60 flex flex-wrap items-center gap-3">
+                {avatarError && (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] text-red-400">
+                    <AlertTriangle className="w-3.5 h-3.5" /> {avatarError}
+                  </span>
+                )}
+                {avatarPreview && <span className="text-[11px] text-amber-400 font-mono">New photo will be stored when you Save.</span>}
+                {avatarRemoved && !avatarPreview && <span className="text-[11px] text-amber-400 font-mono">Picture will be removed when you Save.</span>}
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
+
+      {isEdit ? (
+        /* Resume management card (premium) */
+        <Section title="Resume" desc="View, download, or replace the resume that powers extraction. Replacing it re-runs extraction so you can review before saving.">
+          <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-lg bg-blue-500/10 border border-blue-500/25 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-blue-300" />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="text-sm font-bold text-zinc-100">{pendingName || resume?.fileName || 'No resume uploaded'}</div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-mono text-zinc-500">
+                    <span>Last updated: {fmtDate(resume?.updatedAt)}</span>
+                    <span>Source: {resume?.source || '—'}</span>
+                    <span className={pendingName ? 'text-amber-400' : resume?.hasFile ? 'text-emerald-400' : 'text-zinc-500'}>
+                      Status: {pendingName ? 'Pending save' : resume?.hasFile ? 'Stored' : 'None'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={resume?.hasFile ? `/api/students/${studentId}/resume` : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-disabled={!resume?.hasFile}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${resume?.hasFile ? 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer' : 'border-zinc-800 text-zinc-600 pointer-events-none opacity-50'}`}
+                >
+                  <Eye className="w-3.5 h-3.5" /> View
+                </a>
+                <a
+                  href={resume?.hasFile ? `/api/students/${studentId}/resume?download=1` : undefined}
+                  aria-disabled={!resume?.hasFile}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${resume?.hasFile ? 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer' : 'border-zinc-800 text-zinc-600 pointer-events-none opacity-50'}`}
+                >
+                  <Download className="w-3.5 h-3.5" /> Download
+                </a>
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-60">
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Update Resume
+                </button>
+              </div>
+            </div>
+            {(extractNote || pendingName) && (
+              <div className="mt-4 pt-4 border-t border-zinc-800/60 flex flex-wrap items-center gap-3">
+                {extractNote && (
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] ${extractNote.kind === 'gemini' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <Sparkles className="w-3.5 h-3.5" /> {extractNote.text}
+                  </span>
+                )}
+                {pendingName && (
+                  <span className="text-[11px] text-amber-400 font-mono">New file &ldquo;{pendingName}&rdquo; will be stored when you Save.</span>
+                )}
+              </div>
+            )}
+          </div>
+        </Section>
+      ) : (
+        /* Create mode — extraction only (no record yet to attach a file to) */
+        <Section title="Resume Extraction" desc="Upload a PDF/DOC/DOCX to auto-populate the professional profile. Every extracted field stays editable.">
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/25 text-blue-300 text-xs font-semibold hover:bg-blue-500/15 transition-colors cursor-pointer disabled:opacity-60">
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Upload Resume
+            </button>
+            {extractNote && (
+              <span className={`inline-flex items-center gap-1.5 text-[11px] ${extractNote.kind === 'gemini' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <Sparkles className="w-3.5 h-3.5" /> {extractNote.text}
+              </span>
+            )}
+          </div>
+        </Section>
+      )}
 
       {/* Part 1 — Personal */}
       <Section title="Personal Information">
