@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ParsedProfile } from '@/types/student';
+import { localExtract } from '@/lib/resumeParse';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,73 +25,6 @@ attached resume and return ONLY a JSON object (no markdown, no commentary) with 
 
 Rules: Use "" for unknown string fields and [] for unknown lists. Classify each technical
 skill into exactly one category. Keep responsibilities/achievements as readable sentences.`;
-
-// Deterministic offline fallback so the upload→populate flow always works
-// without a network key. Every field remains editable by the admin afterwards.
-function mockParsed(fileName: string): ParsedProfile {
-  return {
-    firstName: 'Jane',
-    middleName: '',
-    lastName: 'Smith',
-    email: 'jane.smith@example.com',
-    phone: '+91 98765 43210',
-    linkedinUrl: 'https://linkedin.com/in/janesmith',
-    githubUrl: 'https://github.com/janesmith',
-    summary:
-      'AI platform engineer with a focus on LLMOps, inference optimization, and developer tooling. Extracted from ' +
-      fileName +
-      '.',
-    yearsExperience: '3',
-    education: [
-      {
-        degree: 'B.Tech',
-        fieldOfStudy: 'Computer Science & Engineering',
-        institution: 'Indian Institute of Technology, Bangalore',
-        location: 'Bangalore, India',
-        dateOfPassing: '2026',
-        cgpa: '9.2',
-        percentage: '',
-        achievements: 'Dean’s list (2024, 2025)',
-      },
-    ],
-    experience: [
-      {
-        jobTitle: 'ML Platform Intern',
-        companyName: 'Acme AI',
-        location: 'Remote',
-        employmentType: 'Internship',
-        startDate: '2025-05',
-        endDate: '2025-08',
-        responsibilities: 'Built inference caching layer and CI for model evaluation.',
-        achievements: 'Reduced inference API latency by 40% with Redis semantic caching.',
-        technologies: 'Python, FastAPI, Redis',
-      },
-    ],
-    projects: [
-      {
-        title: 'Project Alpha — LLM Optimization Caching',
-        description: 'Semantic key caching that reduced inference latency by 40%.',
-        technologies: 'Python, Redis, FastAPI',
-      },
-    ],
-    certifications: [
-      { title: 'AWS Certified Cloud Practitioner', number: 'AWS-CCP-2025', description: '' },
-    ],
-    skills: [
-      { category: 'language', name: 'Python' },
-      { category: 'language', name: 'Go' },
-      { category: 'framework', name: 'Next.js' },
-      { category: 'framework', name: 'PyTorch' },
-      { category: 'database', name: 'Redis' },
-      { category: 'cloud', name: 'AWS' },
-      { category: 'tool', name: 'Docker' },
-      { category: 'tool', name: 'Kubernetes' },
-    ],
-    softSkills: ['Communication', 'Ownership', 'Problem solving'],
-    achievements: ['Winner, National Hackathon 2025'],
-    awards: ['Best Student Project Award 2025'],
-  };
-}
 
 function stripJsonFences(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -140,10 +74,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ parsed, source: 'gemini', fileName });
     } catch (err) {
       const reason = (err as Error).message === 'no-key' ? 'no-api-key' : 'extraction-failed';
-      // Graceful fallback keeps the review/edit flow usable offline.
-      return NextResponse.json({ parsed: mockParsed(fileName), source: 'mock', reason, fileName });
+      // No LLM key (or LLM failed): parse the ACTUAL uploaded file locally.
+      // This reads the real resume text — it never fabricates sample data.
+      const { parsed, chars } = await localExtract(file);
+      return NextResponse.json({ parsed, source: 'parsed', reason, fileName, chars });
     }
   } catch {
-    return NextResponse.json({ parsed: mockParsed(fileName), source: 'mock', reason: 'bad-request', fileName }, { status: 200 });
+    // Could not even read the upload — return an empty profile (NOT mock data)
+    // so the student can fill the form manually. Every field stays editable.
+    return NextResponse.json({ parsed: emptyParsed(), source: 'parsed', reason: 'unreadable', fileName }, { status: 200 });
   }
+}
+
+function emptyParsed(): ParsedProfile {
+  return {
+    firstName: '', middleName: '', lastName: '', email: '', phone: '',
+    linkedinUrl: '', githubUrl: '', summary: '', yearsExperience: '',
+    education: [], experience: [], projects: [], certifications: [],
+    skills: [], softSkills: [], achievements: [], awards: [],
+  };
 }

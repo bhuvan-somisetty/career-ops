@@ -36,31 +36,28 @@ export default function NavigationShell({ children }: { children: React.ReactNod
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const { currency, setCurrency, symbol } = useCurrency();
   const [profile, setProfile] = useState<CandidateProfile>({
-    name: 'Jane Smith',
-    headline: 'AI Platform & LLMOps Engineer'
+    name: 'My Profile',
+    headline: 'Complete your profile'
   });
   // The logged-in student's profile picture (falls back to initials when absent).
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/profile')
-      .then(res => res.json())
-      .then(data => {
-        if (data.candidate) {
-          setProfile({
-            name: data.candidate.full_name || 'Jane Smith',
-            headline: data.narrative?.headline || 'AI Platform & LLMOps Engineer'
-          });
-        }
-      })
-      .catch(() => {});
-
-    // Resolve the student's stored avatar from the same record the profile uses.
+    // The console belongs to the logged-in student: show THEIR name, headline,
+    // and avatar from their saved Master Profile (never a hardcoded sample).
     const studentId = localStorage.getItem('career_officer_student_id');
     if (studentId) {
       fetch(`/api/students/${studentId}`)
         .then(res => (res.ok ? res.json() : null))
         .then(data => {
+          if (data?.profile) {
+            const p = data.profile;
+            const name = [p.firstName, p.lastName].filter(Boolean).join(' ').trim();
+            setProfile({
+              name: name || 'My Profile',
+              headline: p.experience?.[0]?.jobTitle || p.summary?.slice(0, 40) || 'Complete your profile',
+            });
+          }
           if (data?.avatar?.hasFile) {
             setAvatarUrl(`/api/students/${studentId}/avatar?v=${encodeURIComponent(data.avatar.uploadedAt || '')}`);
           }

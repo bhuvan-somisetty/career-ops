@@ -159,7 +159,7 @@ export default function StudentProfileEditor({
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [extractNote, setExtractNote] = useState<{ kind: 'gemini' | 'mock'; text: string } | null>(null);
+  const [extractNote, setExtractNote] = useState<{ kind: 'gemini' | 'parsed'; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Resume management (edit mode only — needs an existing student id to attach to).
@@ -229,18 +229,16 @@ export default function StudentProfileEditor({
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch('/api/resume/extract', { method: 'POST', body: fd });
-      const data = await res.json() as { parsed: ParsedProfile; source: 'gemini' | 'mock'; reason?: string };
+      const data = await res.json() as { parsed: ParsedProfile; source: 'gemini' | 'parsed'; reason?: string };
       const parsed = data.parsed || {};
       setP((prev) => ({
         ...prev,
         firstName: parsed.firstName || prev.firstName,
         middleName: parsed.middleName ?? prev.middleName,
         lastName: parsed.lastName || prev.lastName,
-        // Never overwrite an email the record already has. The offline mock (and
-        // some real extractions) return a constant address that would collide
-        // with the unique-email constraint and fail the profile save. Fill it
-        // only when the field is currently empty; the user can edit it after.
-        email: prev.email || parsed.email || '',
+        // Use the real email parsed from the resume when present (it is unique
+        // per candidate); fall back to whatever the record already had.
+        email: parsed.email || prev.email,
         phone: parsed.phone || prev.phone,
         linkedinUrl: parsed.linkedinUrl || prev.linkedinUrl,
         githubUrl: parsed.githubUrl || prev.githubUrl,
@@ -258,7 +256,7 @@ export default function StudentProfileEditor({
       setExtractNote(
         data.source === 'gemini'
           ? { kind: 'gemini', text: 'Extracted with Gemini. Review every field below — all values are editable.' }
-          : { kind: 'mock', text: 'Offline sample populated (set GEMINI_API_KEY for real extraction). Review and edit before saving.' }
+          : { kind: 'parsed', text: 'Parsed from your uploaded resume. Review and complete any missing fields — all values are editable.' }
       );
       // In edit mode, hold the file so it is stored (and metadata stamped) on Save.
       if (isEdit) {
