@@ -44,3 +44,9 @@ next-env.d.ts
 # prisma — local SQLite database (schema + migrations ARE committed)
 /prisma/*.db
 /prisma/*.db-journal
+
+.vercel
+.env*.local
+
+# data export dumps (may contain PII)
+prisma/data-dump.json
