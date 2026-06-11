@@ -398,7 +398,7 @@ function Landing() {
       <section className="relative z-10 w-full max-w-7xl mx-auto px-6 pt-20 lg:pt-24 pb-16 min-h-[88vh] flex flex-col lg:flex-row items-center gap-12 xl:gap-16">
         <motion.div style={{ y: heroY, opacity: heroOpacity }} initial="hidden" animate="show" variants={stagger} className="flex-1 space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start max-w-2xl mx-auto lg:mx-0">
           <motion.div variants={fadeUp}>
-            <SectionLabel><Sparkles className="w-3.5 h-3.5 animate-pulse" /> Introducing Career OPS</SectionLabel>
+            <SectionLabel><Sparkles className="w-3.5 h-3.5 animate-pulse" /> Introducing Career Ops</SectionLabel>
           </motion.div>
           <motion.h1 ref={h1Ref} variants={fadeUp} className="relative text-5xl sm:text-7xl font-black tracking-tight leading-[1.02] text-zinc-50">
             {/* resting layer */}
@@ -605,7 +605,7 @@ function Landing() {
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" /><span className="w-2.5 h-2.5 rounded-full bg-amber-500/70" /><span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
                 <span className="ml-3 text-[10px] font-mono text-zinc-500">career-officer.app/dashboard</span>
               </div>
-              <Image src="/showcase/dashboard.png" alt="Career OPS dashboard" width={1600} height={1000} className="w-full h-auto" priority />
+              <Image src="/showcase/dashboard.png" alt="Career Ops dashboard" width={1600} height={1000} className="w-full h-auto" priority />
               {/* cursor-follow soft light */}
               <motion.div aria-hidden className="pointer-events-none absolute inset-0 mix-blend-soft-light" style={{ background: imgLight }} />
               {/* diagonal reflection sweep */}

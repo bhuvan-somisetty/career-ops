@@ -56,7 +56,7 @@ export default function StudentOnboardingPage() {
   useEffect(() => {
     switch (activeStep) {
       case 'welcome':
-        setAiMessage("Welcome to Career OPS. I will guide you through extracting details, auditing CV syntax, and configuring target salaries.");
+        setAiMessage("Welcome to Career Ops. I will guide you through extracting details, auditing CV syntax, and configuring target salaries.");
         break;
       case 'profile':
         setAiMessage("First, let's verify your academic credentials. This helps customize recommendations for matching local placements.");
@@ -276,7 +276,7 @@ export default function StudentOnboardingPage() {
                       Elevate Your Placement Trajectory
                     </h3>
                     <p className="text-xs text-zinc-450 leading-relaxed max-w-lg">
-                      Welcome to the Career OPS platform. This setup portal will parse your resume, synchronize student credentials, and index technical skills to match you with targeted local opportunities.
+                      Welcome to the Career Ops platform. This setup portal will parse your resume, synchronize student credentials, and index technical skills to match you with targeted local opportunities.
                     </p>
                   </div>
 

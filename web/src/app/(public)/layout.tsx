@@ -32,9 +32,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <BrandLogo />
             <div>
               <span className="font-bold text-zinc-100 tracking-tight text-sm group-hover:text-emerald-400 transition-colors">
-                Career OPS
+                Career Ops
               </span>
-              <span className="text-[8px] text-zinc-500 font-mono block">Career Ops</span>
+              <span className="text-[8px] text-zinc-500 font-mono block">Career Operating System</span>
             </div>
           </Link>
 
@@ -59,7 +59,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* Footer */}
       <footer className="w-full border-t border-zinc-900/60 bg-[#050507] py-8 px-6 text-[10px] text-zinc-650 font-mono">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Career OPS Inc. All placement intelligence operations are running locally.</p>
+          <p>© 2026 Career Ops Inc. All placement intelligence operations are running locally.</p>
           <div className="flex items-center gap-4 text-zinc-500">
             <Link href="/portal" className="hover:text-zinc-300">Portals</Link>
             <Link href="/admin/login" className="hover:text-zinc-300">Admin</Link>

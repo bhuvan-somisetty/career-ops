@@ -92,7 +92,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
     }
   ];
 
-  // Premium CO Monogram SVG branding (Career OPS + Trajectory)
+  // Premium CO Monogram SVG branding (Career Ops + Trajectory)
   const BrandLogo = () => (
     <div className="w-8 h-8 relative flex items-center justify-center shrink-0">
       <svg className="w-full h-full text-emerald-500" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -116,9 +116,9 @@ export default function NavigationShell({ children }: { children: React.ReactNod
             <BrandLogo />
             <div>
               <span className="font-bold text-zinc-100 tracking-tight text-sm group-hover:text-emerald-400 transition-colors">
-                Career OPS
+                Career Ops
               </span>
-              <span className="text-[9px] text-zinc-500 font-mono block">Career Ops</span>
+              <span className="text-[9px] text-zinc-500 font-mono block">Career Operating System</span>
             </div>
           </Link>
 
@@ -229,7 +229,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
       <header className="md:hidden flex items-center justify-between px-6 py-4 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900 sticky top-0 z-40">
         <Link href="/" className="flex items-center gap-2.5">
           <BrandLogo />
-          <span className="font-bold text-zinc-100 tracking-tight text-sm">Career OPS</span>
+          <span className="font-bold text-zinc-100 tracking-tight text-sm">Career Ops</span>
         </Link>
         <button
           onClick={() => setMobileMenuOpen(true)}
@@ -261,7 +261,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
                 <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                   <div className="flex items-center gap-2.5">
                     <BrandLogo />
-                    <span className="font-bold text-zinc-100 tracking-tight text-sm">Career OPS</span>
+                    <span className="font-bold text-zinc-100 tracking-tight text-sm">Career Ops</span>
                   </div>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
@@ -351,7 +351,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
               {pathname === '/settings' && 'Platform Settings'}
             </h1>
             <p className="text-[9px] text-zinc-500 mt-0.5 font-mono">
-              Career OPS — Command console
+              Career Ops — Command console
             </p>
           </div>
 

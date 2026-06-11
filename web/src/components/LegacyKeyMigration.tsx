@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-// One-time migration: the app was renamed Career Officer → Career OPS and its
+// One-time migration: the app was renamed Career Officer → Career Ops and its
 // localStorage keys moved from `career_officer_*` to `career_ops_*`. Copy any
 // legacy values forward so existing sessions (login, student id, onboarding,
 // currency, admin) survive the rename instead of silently logging users out.
