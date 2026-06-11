@@ -296,8 +296,8 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.removeItem('career_officer_logged_in');
-                    localStorage.removeItem('career_officer_token');
+                    localStorage.removeItem('career_ops_logged_in');
+                    localStorage.removeItem('career_ops_token');
                     router.push('/portal');
                   }}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-500 font-bold text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400/60"

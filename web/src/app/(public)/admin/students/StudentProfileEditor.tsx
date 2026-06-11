@@ -143,6 +143,7 @@ export default function StudentProfileEditor({
   title,
   resumeMeta = null,
   avatarMeta = null,
+  displayId = null,
 }: {
   initial: StudentProfileInput;
   studentId?: string;
@@ -151,6 +152,7 @@ export default function StudentProfileEditor({
   title?: string;
   resumeMeta?: ResumeMeta | null;
   avatarMeta?: AvatarMeta | null;
+  displayId?: string | null;
 }) {
   const router = useRouter();
   const isEdit = !!studentId;
@@ -377,7 +379,14 @@ export default function StudentProfileEditor({
                 </div>
               )
             )}
-            <h2 className="text-2xl font-black text-zinc-100 tracking-tight">{title ?? (isEdit ? `Edit — ${fullName}` : 'Create Student')}</h2>
+            <div>
+              <h2 className="text-2xl font-black text-zinc-100 tracking-tight">{title ?? (isEdit ? `Edit — ${fullName}` : 'Create Student')}</h2>
+              {displayId && (
+                <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-semibold tracking-wider">
+                  ID: {displayId}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -589,6 +598,9 @@ export default function StudentProfileEditor({
           <Field label="Years of Experience" value={p.yearsExperience} onChange={(v) => set('yearsExperience', v)} type="number" />
         </div>
         <Area label="Professional Summary" value={p.summary} onChange={(v) => set('summary', v)} rows={4} />
+        <div className="mt-4">
+          <Area label="Description" value={p.description} onChange={(v) => set('description', v)} rows={3} />
+        </div>
       </Section>
 
       <Section title="Work Experience" desc="Duration is auto-calculated from start/end dates." action={<RepeatBtn label="Add Experience" onClick={() => set('experience', [...p.experience, { jobTitle: '', companyName: '', location: '', employmentType: '', startDate: '', endDate: '', responsibilities: '', achievements: '', technologies: '' }])} />}>

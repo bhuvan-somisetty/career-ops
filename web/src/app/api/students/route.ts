@@ -27,8 +27,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const id = await createStudent(body);
-    return NextResponse.json({ id }, { status: 201 });
+    const { id, studentId } = await createStudent(body);
+    return NextResponse.json({ id, studentId }, { status: 201 });
   } catch (err) {
     const e = err as { code?: string; message?: string };
     if (e.code === 'P2002') {

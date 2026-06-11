@@ -74,7 +74,7 @@ export default function AdminDashboardPage() {
 
   // Route protection
   useEffect(() => {
-    const adminLoggedIn = localStorage.getItem('career_officer_admin_logged_in');
+    const adminLoggedIn = localStorage.getItem('career_ops_admin_logged_in');
     if (adminLoggedIn !== 'true') {
       router.replace('/admin/login');
     } else {
@@ -113,8 +113,8 @@ export default function AdminDashboardPage() {
   );
 
   const confirmLogout = () => {
-    localStorage.removeItem('career_officer_admin_logged_in');
-    localStorage.removeItem('career_officer_admin_token');
+    localStorage.removeItem('career_ops_admin_logged_in');
+    localStorage.removeItem('career_ops_admin_token');
     router.push('/admin/login');
   };
 

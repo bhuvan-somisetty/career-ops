@@ -91,16 +91,38 @@ function scalarData(p: StudentProfileInput) {
     linkedinUrl: p.linkedinUrl || null,
     githubUrl: p.githubUrl || null,
     summary: p.summary || null,
+    description: p.description || null,
     yearsExperience: num(p.yearsExperience),
     profileCompleteness: computeCompleteness(p),
   };
 }
 
-export async function createStudent(p: StudentProfileInput): Promise<string> {
-  const created = await prisma.student.create({
-    data: { ...scalarData(p), ...childCreates(p) },
+/** Human-facing immutable student code, e.g. CO-2026-000001. */
+export function formatStudentId(seq: number): string {
+  return `CO-${new Date().getFullYear()}-${String(seq).padStart(6, '0')}`;
+}
+
+export async function createStudent(p: StudentProfileInput): Promise<{ id: string; studentId: string }> {
+  // Atomic counter increment + student insert in one transaction → the
+  // sequential studentId is collision-free even under concurrent creates.
+  return prisma.$transaction(async (tx) => {
+    const c = await tx.counter.upsert({
+      where: { id: 'student' },
+      create: { id: 'student', value: 1 },
+      update: { value: { increment: 1 } },
+    });
+    const studentId = formatStudentId(c.value);
+    const created = await tx.student.create({
+      data: { studentId, ...scalarData(p), ...childCreates(p) },
+    });
+    return { id: created.id, studentId };
   });
-  return created.id;
+}
+
+/** Read the immutable student code for a record (null if not yet assigned). */
+export async function getStudentCode(id: string): Promise<string | null> {
+  const s = await prisma.student.findUnique({ where: { id }, select: { studentId: true } });
+  return s?.studentId ?? null;
 }
 
 export async function updateStudent(id: string, p: StudentProfileInput): Promise<void> {
@@ -278,6 +300,7 @@ export function toProfileInput(s: StudentRecord): StudentProfileInput {
     linkedinUrl: s.linkedinUrl ?? '',
     githubUrl: s.githubUrl ?? '',
     summary: s.summary ?? '',
+    description: s.description ?? '',
     yearsExperience: s.yearsExperience != null ? String(s.yearsExperience) : '',
     education: s.education.map((e) => ({
       id: e.id, degree: e.degree ?? '', fieldOfStudy: e.fieldOfStudy ?? '', institution: e.institution ?? '',
@@ -315,6 +338,7 @@ export async function listStudents(opts: { search?: string; completeness?: strin
   const where: Prisma.StudentWhereInput = {};
   if (search) {
     where.OR = [
+      { studentId: { contains: search } },
       { firstName: { contains: search } },
       { lastName: { contains: search } },
       { email: { contains: search } },
@@ -335,6 +359,7 @@ export async function listStudents(opts: { search?: string; completeness?: strin
     const topEdu = s.education[0];
     return {
       id: s.id,
+      studentId: s.studentId ?? null,
       firstName: s.firstName,
       lastName: s.lastName,
       email: s.email,

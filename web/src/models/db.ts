@@ -1,5 +1,5 @@
 /**
- * Career Officer — PostgreSQL Database Architecture Models
+ * Career OPS — PostgreSQL Database Architecture Models
  * 
  * Production-ready database schema definitions and types.
  * Designed to align with Prisma, TypeORM, or raw SQL mapping layers.

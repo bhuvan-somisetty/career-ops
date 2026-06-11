@@ -10,7 +10,7 @@ export function useAdminAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const ok = localStorage.getItem('career_officer_admin_logged_in') === 'true';
+    const ok = localStorage.getItem('career_ops_admin_logged_in') === 'true';
     if (!ok) router.replace('/admin/login');
     else setAuthorized(true);
     setLoading(false);

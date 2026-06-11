@@ -13,6 +13,10 @@ datasource db {
 model Student {
   id String @id @default(cuid())
 
+  // --- Unique human-facing student code (immutable, e.g. CO-2026-000001) ---
+  // Generated once at creation from an atomic counter; never updated.
+  studentId String? @unique
+
   // --- Personal information ---
   firstName     String
   middleName    String?
@@ -42,6 +46,7 @@ model Student {
 
   // --- Professional summary ---
   summary         String?
+  description     String?
   yearsExperience Float?
 
   // --- Meta ---
@@ -76,6 +81,13 @@ model Student {
 
 // One-to-one binary store for the uploaded resume. Kept separate so profile/
 // list queries never load the blob; only the View/Download route reads it.
+// Atomic, monotonic counters (e.g. the running student sequence). Incrementing
+// inside a transaction guarantees collision-free sequential studentId codes.
+model Counter {
+  id    String @id
+  value Int    @default(0)
+}
+
 model StudentResumeFile {
   id        String   @id @default(cuid())
   studentId String   @unique

@@ -80,7 +80,7 @@ export default function AdminStudentsPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, or skill…"
+              placeholder="Search by Student ID, name, email, or skill…"
               className="w-full pl-9 pr-4 py-2 rounded-xl bg-zinc-950 border border-zinc-800 focus:border-blue-500/40 focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-xs text-zinc-200 transition-all"
             />
           </div>
@@ -116,7 +116,8 @@ export default function AdminStudentsPage() {
               <table className="w-full text-left border-collapse text-xs font-sans">
                 <thead>
                   <tr className="border-b border-zinc-900 text-zinc-500 font-mono text-[9px] uppercase tracking-wider">
-                    <th className="py-3 pr-2">Name</th>
+                    <th className="py-3 pr-2">Student ID</th>
+                    <th className="py-3 px-2">Name</th>
                     <th className="py-3 px-2">Email</th>
                     <th className="py-3 px-2">Program</th>
                     <th className="py-3 px-2">Skills</th>
@@ -127,7 +128,8 @@ export default function AdminStudentsPage() {
                 <tbody className="divide-y divide-zinc-900/40">
                   {students.map((s) => (
                     <tr key={s.id} className="hover:bg-zinc-900/30 transition-colors group">
-                      <td className="py-4 pr-2 font-bold text-zinc-200">{s.firstName} {s.lastName}</td>
+                      <td className="py-4 pr-2 font-mono text-[10px] text-emerald-300">{s.studentId || '—'}</td>
+                      <td className="py-4 px-2 font-bold text-zinc-200">{s.firstName} {s.lastName}</td>
                       <td className="py-4 px-2 text-zinc-400 font-mono text-[10px]">{s.email}</td>
                       <td className="py-4 px-2 text-zinc-400">{s.topDegree || '—'}{s.topInstitution ? <span className="text-zinc-600"> · {s.topInstitution}</span> : null}</td>
                       <td className="py-4 px-2 text-zinc-400 font-mono">{s.skillCount}</td>

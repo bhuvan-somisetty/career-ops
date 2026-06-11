@@ -83,6 +83,7 @@ export interface StudentProfileInput {
   githubUrl: string;
   // Professional summary
   summary: string;
+  description: string;
   yearsExperience: string;
   // Collections
   education: EducationInput[];
@@ -113,6 +114,7 @@ export interface AvatarMeta {
 
 export interface StudentSummary {
   id: string;
+  studentId: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -139,7 +141,7 @@ export function emptyProfile(): StudentProfileInput {
     address1: '', address2: '', city: '', state: '', district: '', pinCode: '', country: '',
     email: '', phone: '', altPhone: '',
     linkedinUrl: '', githubUrl: '',
-    summary: '', yearsExperience: '',
+    summary: '', description: '', yearsExperience: '',
     education: [], experience: [], projects: [], certifications: [],
     skills: [], softSkills: [], achievements: [], awards: [],
   };

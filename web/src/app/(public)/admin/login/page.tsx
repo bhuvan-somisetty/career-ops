@@ -29,7 +29,7 @@ export default function AdminAuthPage() {
       if (mode === 'forgot') {
         setMsg('Reset token sent. Please verify your institution mailbox.');
       } else {
-        localStorage.setItem('career_officer_admin_logged_in', 'true');
+        localStorage.setItem('career_ops_admin_logged_in', 'true');
         router.push('/admin/dashboard');
       }
     }, 1200);

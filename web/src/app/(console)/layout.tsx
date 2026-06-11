@@ -12,7 +12,7 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     // Client-side local storage authorization check
-    const loggedIn = localStorage.getItem('career_officer_logged_in');
+    const loggedIn = localStorage.getItem('career_ops_logged_in');
     if (loggedIn !== 'true') {
       router.replace('/portal');
     } else {

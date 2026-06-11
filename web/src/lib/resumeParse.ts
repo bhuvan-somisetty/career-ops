@@ -36,7 +36,9 @@ function pdfStreamToText(content: string): string {
   return out;
 }
 
-function extractPdf(buf: Buffer): string {
+// Best-effort, dependency-free PDF text (literal-string operands). Used only as
+// a fallback if the proper pdf.js extractor returns too little.
+function extractPdfRaw(buf: Buffer): string {
   let text = '';
   let idx = 0;
   while (true) {
@@ -52,11 +54,20 @@ function extractPdf(buf: Buffer): string {
     text += pdfStreamToText(decoded) + '\n';
     idx = eIdx + 9;
   }
-  // Fallback: some PDFs store text uncompressed inline.
-  if (text.replace(/\s/g, '').length < 20) {
-    text += pdfStreamToText(buf.toString('latin1'));
-  }
   return text;
+}
+
+// Proper PDF text extraction via pdf.js (handles compressed streams + embedded
+// subset/CID fonts that the raw method cannot decode).
+async function extractPdf(buf: Buffer): Promise<string> {
+  try {
+    const { extractText, getDocumentProxy } = await import('unpdf');
+    const pdf = await getDocumentProxy(new Uint8Array(buf));
+    const { text } = await extractText(pdf, { mergePages: true });
+    const joined = Array.isArray(text) ? text.join('\n') : text;
+    if (joined && joined.replace(/\s/g, '').length >= 20) return joined;
+  } catch { /* fall through to raw */ }
+  return extractPdfRaw(buf);
 }
 
 // Read word/document.xml out of a DOCX (a ZIP) via the central directory.
@@ -100,7 +111,7 @@ export async function extractResumeText(file: File): Promise<string> {
   const name = (file.name || '').toLowerCase();
   try {
     if (mime.includes('officedocument.wordprocessing') || name.endsWith('.docx')) return extractDocx(buf);
-    if (mime === 'application/pdf' || name.endsWith('.pdf') || buf.subarray(0, 5).toString() === '%PDF-') return extractPdf(buf);
+    if (mime === 'application/pdf' || name.endsWith('.pdf') || buf.subarray(0, 5).toString() === '%PDF-') return await extractPdf(buf);
     return buf.toString('utf8');
   } catch {
     return buf.toString('utf8');
@@ -148,23 +159,36 @@ function splitSections(text: string): Record<string, string> {
 
 const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
 const PHONE_RE = /(?:\+\d{1,3}[\s-]?)?(?:\(?\d{2,4}\)?[\s-]?){2,4}\d{2,4}/;
-const LINKEDIN_RE = /(?:https?:\/\/)?(?:[a-z]{2,3}\.)?linkedin\.com\/[^\s)]+/i;
-const GITHUB_RE = /(?:https?:\/\/)?(?:www\.)?github\.com\/[^\s)]+/i;
+const LINKEDIN_RE = /(?:https?:\/\/)?(?:[a-z]{2,3}\.)?linkedin\.com\/[^\s)|]+/i;
+const GITHUB_RE = /(?:https?:\/\/)?(?:www\.)?github\.com\/[^\s)|]+/i;
+// "GitHub: handle" / "LinkedIn — handle" style references without a full URL.
+const GITHUB_HANDLE_RE = /github\s*[:\-/]\s*@?([a-z0-9][a-z0-9-]{0,38})/i;
+const LINKEDIN_HANDLE_RE = /linkedin\s*[:\-/]\s*@?(?:in\/)?([a-z0-9][a-z0-9-]{1,60})/i;
+
+function titleCase(s: string): string {
+  return s.split(/\s+/).filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
 
 function guessName(text: string, email: string): string {
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  // A resume usually opens with the candidate's name.
-  for (const l of lines.slice(0, 8)) {
+  // unpdf often returns flat text whose FIRST tokens are the candidate's name,
+  // immediately followed by their email/links. Take the alphabetic words that
+  // appear before the email address (or the first contact keyword).
+  const emailIdx = email ? text.indexOf(email) : -1;
+  const head = text.slice(0, emailIdx > 0 && emailIdx < 200 ? emailIdx : 200);
+  const cut = head.search(/[|]|\bemail\b|\bgithub\b|\blinkedin\b|\bphone\b|\bmobile\b/i);
+  const prefix = (cut > 0 ? head.slice(0, cut) : head).trim();
+  const words = prefix.split(/\s+/).filter((w) => /^[A-Za-z][A-Za-z.'-]*$/.test(w));
+  if (words.length >= 2) return titleCase(words.slice(0, 3).join(' '));
+
+  // Otherwise scan early lines for a clean 2–4 word name line.
+  for (const l of text.split(/\r?\n/).map((x) => x.trim()).filter(Boolean).slice(0, 8)) {
     if (EMAIL_RE.test(l) || /\d/.test(l) || l.length > 40) continue;
-    const words = l.split(/\s+/).filter(Boolean);
-    if (words.length >= 2 && words.length <= 4 && words.every((w) => /^[A-Za-z.'-]+$/.test(w))) {
-      return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-    }
+    const w = l.split(/\s+/).filter(Boolean);
+    if (w.length >= 2 && w.length <= 4 && w.every((x) => /^[A-Za-z.'-]+$/.test(x))) return titleCase(l);
   }
-  // Fallback: derive from the email local-part.
-  const local = email.split('@')[0]?.replace(/[._-]+/g, ' ').trim();
-  if (local) return local.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  return '';
+  // Last resort: derive from the email local-part.
+  const local = email.split('@')[0]?.replace(/[._\-0-9]+/g, ' ').trim();
+  return local ? titleCase(local) : '';
 }
 
 function findSkills(text: string): { category: SkillCategory; name: string }[] {
@@ -183,17 +207,31 @@ function findSkills(text: string): { category: SkillCategory; name: string }[] {
 
 export function parseResumeText(text: string): ParsedProfile {
   const clean = text.replace(/ /g, '').replace(/[ \t]+/g, ' ');
+  // Insert line breaks before known headings so flat (single-line) PDF text
+  // still splits into sections.
+  const layout = clean.replace(
+    /\s+(SKILLS|TECHNICAL SKILLS|EDUCATION|WORK EXPERIENCE|EXPERIENCE|PROJECTS|CERTIFICATIONS?|ACHIEVEMENTS|AWARDS|SUMMARY|OBJECTIVE|ABOUT(?: ME)?|PROFILE)\b/gi,
+    '\n$1\n'
+  );
   const email = (clean.match(EMAIL_RE) || [''])[0];
   const phoneRaw = (clean.match(PHONE_RE) || [''])[0].trim();
   const phone = phoneRaw.replace(/\s+/g, ' ').length >= 7 ? phoneRaw : '';
-  const linkedinUrl = (clean.match(LINKEDIN_RE) || [''])[0];
-  const githubUrl = (clean.match(GITHUB_RE) || [''])[0];
+  // A real LinkedIn/GitHub custom slug almost always has a hyphen or digit
+  // (e.g. "bhuvan-somisetty"). Requiring that avoids grabbing a bare first name
+  // that follows a "LinkedIn:" label.
+  const isSlug = (s: string) => /[-\d]/.test(s) && s.length >= 4;
+  let linkedinUrl = (clean.match(LINKEDIN_RE) || [''])[0];
+  if (!linkedinUrl) { const h = clean.match(LINKEDIN_HANDLE_RE); if (h && isSlug(h[1])) linkedinUrl = `https://linkedin.com/in/${h[1]}`; }
+  let githubUrl = (clean.match(GITHUB_RE) || [''])[0];
+  if (!githubUrl) { const h = clean.match(GITHUB_HANDLE_RE); if (h && isSlug(h[1])) githubUrl = `https://github.com/${h[1]}`; }
+  if (linkedinUrl && !/^https?:/i.test(linkedinUrl)) linkedinUrl = 'https://' + linkedinUrl;
+  if (githubUrl && !/^https?:/i.test(githubUrl)) githubUrl = 'https://' + githubUrl;
   const name = guessName(clean, email);
   const [firstName, ...rest] = name.split(' ');
   const lastName = rest.length ? rest[rest.length - 1] : '';
   const middleName = rest.length > 1 ? rest.slice(0, -1).join(' ') : '';
 
-  const sections = splitSections(clean);
+  const sections = splitSections(layout);
   const summary = (sections.summary || sections.objective || sections.profile || sections.about || '')
     .trim().split('\n').filter(Boolean).join(' ').slice(0, 600);
 

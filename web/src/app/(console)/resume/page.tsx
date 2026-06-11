@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { ResumeMatch } from '@/lib/resumeMatch';
 
-const STUDENT_ID_KEY = 'career_officer_student_id';
+const STUDENT_ID_KEY = 'career_ops_student_id';
 
 function fmtDate(iso?: string | null): string {
   if (!iso) return '—';

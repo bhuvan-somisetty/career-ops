@@ -15,6 +15,7 @@ export default function EditStudentPage() {
   const [profile, setProfile] = useState<StudentProfileInput | null>(null);
   const [resume, setResume] = useState<ResumeMeta | null>(null);
   const [avatar, setAvatar] = useState<AvatarMeta | null>(null);
+  const [displayId, setDisplayId] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'notfound'>('loading');
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function EditStudentPage() {
         setProfile(data.profile);
         setResume((data.resume as ResumeMeta) ?? null);
         setAvatar((data.avatar as AvatarMeta) ?? null);
+        setDisplayId((data.studentId as string) ?? null);
         setState('ready');
       })
       .catch(() => setState('notfound'));
@@ -45,7 +47,7 @@ export default function EditStudentPage() {
           <Link href="/admin/students" className="inline-block text-[11px] font-mono text-blue-400 hover:text-blue-300">← Back to all students</Link>
         </div>
       )}
-      {state === 'ready' && profile && id && <StudentProfileEditor initial={profile} studentId={id} resumeMeta={resume} avatarMeta={avatar} />}
+      {state === 'ready' && profile && id && <StudentProfileEditor initial={profile} studentId={id} resumeMeta={resume} avatarMeta={avatar} displayId={displayId} />}
     </div>
   );
 }

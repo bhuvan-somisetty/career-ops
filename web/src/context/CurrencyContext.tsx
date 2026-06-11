@@ -32,19 +32,19 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [currency, setCurrencyState] = useState<CurrencyCode>('INR');
 
   useEffect(() => {
-    const saved = localStorage.getItem('career_officer_currency');
+    const saved = localStorage.getItem('career_ops_currency');
     if (saved && (saved in CURRENCIES)) {
       setCurrencyState(saved as CurrencyCode);
     } else {
       // Ensure default is INR if none is saved
       setCurrencyState('INR');
-      localStorage.setItem('career_officer_currency', 'INR');
+      localStorage.setItem('career_ops_currency', 'INR');
     }
   }, []);
 
   const setCurrency = (code: CurrencyCode) => {
     setCurrencyState(code);
-    localStorage.setItem('career_officer_currency', code);
+    localStorage.setItem('career_ops_currency', code);
     window.dispatchEvent(new Event('currencychange'));
   };
 

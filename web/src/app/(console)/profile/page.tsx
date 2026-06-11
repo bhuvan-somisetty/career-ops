@@ -8,13 +8,14 @@ import { emptyProfile, type StudentProfileInput, type ResumeMeta, type AvatarMet
 // The logged-in student's master-profile record id is kept in localStorage
 // (student auth is a mock, so there is no server session to derive it from).
 // This keeps the SAME record across refresh / reopen for this browser.
-const STUDENT_ID_KEY = 'career_officer_student_id';
+const STUDENT_ID_KEY = 'career_ops_student_id';
 
 export default function ProfilePage() {
   const [studentId, setStudentId] = useState<string | null>(null);
   const [profile, setProfile] = useState<StudentProfileInput | null>(null);
   const [resume, setResume] = useState<ResumeMeta | null>(null);
   const [avatar, setAvatar] = useState<AvatarMeta | null>(null);
+  const [displayId, setDisplayId] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [err, setErr] = useState('');
 
@@ -34,6 +35,7 @@ export default function ProfilePage() {
               setProfile(data.profile as StudentProfileInput);
               setResume((data.resume as ResumeMeta) ?? null);
               setAvatar((data.avatar as AvatarMeta) ?? null);
+              setDisplayId((data.studentId as string) ?? null);
               setState('ready');
             }
             return;
@@ -99,6 +101,7 @@ export default function ProfilePage() {
       studentId={studentId!}
       resumeMeta={resume}
       avatarMeta={avatar}
+      displayId={displayId}
       backHref="/dashboard"
       backLabel="Dashboard"
       title="My Profile"

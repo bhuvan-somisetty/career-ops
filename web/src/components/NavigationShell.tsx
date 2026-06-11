@@ -45,7 +45,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
   useEffect(() => {
     // The console belongs to the logged-in student: show THEIR name, headline,
     // and avatar from their saved Master Profile (never a hardcoded sample).
-    const studentId = localStorage.getItem('career_officer_student_id');
+    const studentId = localStorage.getItem('career_ops_student_id');
     if (studentId) {
       fetch(`/api/students/${studentId}`)
         .then(res => (res.ok ? res.json() : null))
@@ -92,7 +92,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
     }
   ];
 
-  // Premium CO Monogram SVG branding (Career Officer + Trajectory)
+  // Premium CO Monogram SVG branding (Career OPS + Trajectory)
   const BrandLogo = () => (
     <div className="w-8 h-8 relative flex items-center justify-center shrink-0">
       <svg className="w-full h-full text-emerald-500" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -116,9 +116,9 @@ export default function NavigationShell({ children }: { children: React.ReactNod
             <BrandLogo />
             <div>
               <span className="font-bold text-zinc-100 tracking-tight text-sm group-hover:text-emerald-400 transition-colors">
-                Career Officer
+                Career OPS
               </span>
-              <span className="text-[9px] text-zinc-500 font-mono block">Career Operating OS</span>
+              <span className="text-[9px] text-zinc-500 font-mono block">Career Ops</span>
             </div>
           </Link>
 
@@ -229,7 +229,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
       <header className="md:hidden flex items-center justify-between px-6 py-4 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900 sticky top-0 z-40">
         <Link href="/" className="flex items-center gap-2.5">
           <BrandLogo />
-          <span className="font-bold text-zinc-100 tracking-tight text-sm">Career Officer</span>
+          <span className="font-bold text-zinc-100 tracking-tight text-sm">Career OPS</span>
         </Link>
         <button
           onClick={() => setMobileMenuOpen(true)}
@@ -261,7 +261,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
                 <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
                   <div className="flex items-center gap-2.5">
                     <BrandLogo />
-                    <span className="font-bold text-zinc-100 tracking-tight text-sm">Career Officer</span>
+                    <span className="font-bold text-zinc-100 tracking-tight text-sm">Career OPS</span>
                   </div>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
@@ -351,7 +351,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
               {pathname === '/settings' && 'Platform Settings'}
             </h1>
             <p className="text-[9px] text-zinc-500 mt-0.5 font-mono">
-              Career Officer — Command console
+              Career OPS — Command console
             </p>
           </div>
 
@@ -459,8 +459,8 @@ export default function NavigationShell({ children }: { children: React.ReactNod
                 </button>
                 <button
                   onClick={() => {
-                    localStorage.removeItem('career_officer_logged_in');
-                    localStorage.removeItem('career_officer_token');
+                    localStorage.removeItem('career_ops_logged_in');
+                    localStorage.removeItem('career_ops_token');
                     router.push('/portal');
                   }}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-500 font-bold text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400/60"

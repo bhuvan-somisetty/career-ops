@@ -1,5 +1,5 @@
 /**
- * Career Officer — Pluggable API Service Layer
+ * Career OPS — Pluggable API Service Layer
  * 
  * This file defines the core service interfaces and pluggable clients
  * for integration with tomorrow's backend placement microservices.

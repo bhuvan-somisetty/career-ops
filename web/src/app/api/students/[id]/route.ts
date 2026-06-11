@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStudentProfile, updateStudent, deleteStudent, getResumeMeta, getAvatarMeta } from '@/lib/studentService';
+import { getStudentProfile, updateStudent, deleteStudent, getResumeMeta, getAvatarMeta, getStudentCode } from '@/lib/studentService';
 import type { StudentProfileInput } from '@/types/student';
 
 export const runtime = 'nodejs';
@@ -12,7 +12,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (!profile) return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
     const resume = await getResumeMeta(id);
     const avatar = await getAvatarMeta(id);
-    return NextResponse.json({ id, profile, resume, avatar });
+    const studentId = await getStudentCode(id);
+    return NextResponse.json({ id, studentId, profile, resume, avatar });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

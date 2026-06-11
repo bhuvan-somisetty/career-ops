@@ -12,7 +12,7 @@ export default function PortalSelectionPage() {
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    setOnboarded(localStorage.getItem('career_officer_onboarded') === 'true');
+    setOnboarded(localStorage.getItem('career_ops_onboarded') === 'true');
   }, []);
 
   const handleStudentClick = (e: React.MouseEvent) => {
@@ -20,8 +20,8 @@ export default function PortalSelectionPage() {
       e.preventDefault();
       setSigningIn(true);
       setTimeout(() => {
-        localStorage.setItem('career_officer_logged_in', 'true');
-        localStorage.setItem('career_officer_token', 'sess_token_student_active');
+        localStorage.setItem('career_ops_logged_in', 'true');
+        localStorage.setItem('career_ops_token', 'sess_token_student_active');
         router.push('/dashboard');
       }, 700);
     }

@@ -11,7 +11,7 @@ export default function AdminProfilePage() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   useEffect(() => {
-    const adminLoggedIn = localStorage.getItem('career_officer_admin_logged_in');
+    const adminLoggedIn = localStorage.getItem('career_ops_admin_logged_in');
     if (adminLoggedIn !== 'true') {
       router.replace('/admin/login');
     } else {
