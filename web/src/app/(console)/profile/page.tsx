@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Loader2, AlertTriangle } from 'lucide-react';
-import StudentProfileEditor from '@/app/(public)/admin/students/StudentProfileEditor';
-import { emptyProfile, type StudentProfileInput, type ResumeMeta, type AvatarMeta } from '@/types/student';
+import StudentProfileEditor from '@/components/StudentProfileEditor';
+import { type StudentProfileInput, type ResumeMeta, type AvatarMeta } from '@/types/student';
 
 // The logged-in student's master-profile record id is kept in localStorage
 // (student auth is a mock, so there is no server session to derive it from).
@@ -24,44 +24,31 @@ export default function ProfilePage() {
 
     async function resolveStudent() {
       try {
-        // 1) Reuse the existing record for this browser if it still exists.
-        const existing = localStorage.getItem(STUDENT_ID_KEY);
-        if (existing) {
-          const res = await fetch(`/api/students/${existing}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (!cancelled) {
-              setStudentId(existing);
-              setProfile(data.profile as StudentProfileInput);
-              setResume((data.resume as ResumeMeta) ?? null);
-              setAvatar((data.avatar as AvatarMeta) ?? null);
-              setDisplayId((data.studentId as string) ?? null);
-              setState('ready');
+        // The owning Student.id comes from the session (set at signup). Resolve
+        // it via /api/auth/me, falling back to the cached localStorage id.
+        let id = localStorage.getItem(STUDENT_ID_KEY);
+        try {
+          const meRes = await fetch('/api/auth/me', { cache: 'no-store' });
+          if (meRes.ok) {
+            const me = await meRes.json();
+            if (me?.studentId) {
+              id = me.studentId;
+              localStorage.setItem(STUDENT_ID_KEY, me.studentId);
             }
-            return;
           }
-          localStorage.removeItem(STUDENT_ID_KEY); // stale id → recreate below
-        }
+        } catch { /* offline — use cached id */ }
 
-        // 2) First visit: create the student's record via the SAME API.
-        //    Required fields get editable placeholders the student replaces.
-        const seed: StudentProfileInput = {
-          ...emptyProfile(),
-          firstName: 'New',
-          lastName: 'Student',
-          email: `student-${Date.now()}@careerofficer.local`,
-        };
-        const created = await fetch('/api/students', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(seed),
-        });
-        const cj = await created.json();
-        if (!created.ok) throw new Error(cj.error || 'Could not initialize your profile.');
-        localStorage.setItem(STUDENT_ID_KEY, cj.id);
+        if (!id) throw new Error('No profile is linked to your account yet.');
+
+        const res = await fetch(`/api/students/${id}`);
+        if (!res.ok) throw new Error('Could not load your profile.');
+        const data = await res.json();
         if (!cancelled) {
-          setStudentId(cj.id);
-          setProfile(seed);
+          setStudentId(id);
+          setProfile(data.profile as StudentProfileInput);
+          setResume((data.resume as ResumeMeta) ?? null);
+          setAvatar((data.avatar as AvatarMeta) ?? null);
+          setDisplayId((data.studentId as string) ?? null);
           setState('ready');
         }
       } catch (e) {

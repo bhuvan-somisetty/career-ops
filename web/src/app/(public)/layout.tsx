@@ -39,12 +39,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </Link>
 
           <div className="flex items-center gap-4">
-            <Link href="/portal" className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors">
-              Portals
+            <Link href="/login" className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors">
+              Sign in
             </Link>
-            <Link href="/portal">
+            <Link href="/signup">
               <button className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-semibold text-xs cursor-pointer transition-all">
-                Launch App
+                Get Started
               </button>
             </Link>
           </div>
@@ -61,8 +61,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 Career Ops Inc. All placement intelligence operations are running locally.</p>
           <div className="flex items-center gap-4 text-zinc-500">
-            <Link href="/portal" className="hover:text-zinc-300">Portals</Link>
-            <Link href="/admin/login" className="hover:text-zinc-300">Admin</Link>
+            <Link href="/login" className="hover:text-zinc-300">Sign in</Link>
+            <Link href="/signup" className="hover:text-zinc-300">Sign up</Link>
           </div>
         </div>
       </footer>

@@ -425,15 +425,15 @@ function Landing() {
             ))}
           </motion.div>
           <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto pt-2">
-            <Link href="/portal" className="w-full sm:w-auto">
+            <Link href="/signup" className="w-full sm:w-auto">
               <motion.button ref={studentRef} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ boxShadow: studentShadow }} className="px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm cursor-pointer transition-colors flex items-center justify-center gap-2 group w-full sm:w-52">
-                Student Portal <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+                Get Started <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
               </motion.button>
             </Link>
-            <Link href="/admin/login" className="w-full sm:w-auto">
+            <Link href="/login" className="w-full sm:w-auto">
               <motion.button ref={adminRef} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ borderColor: adminBorder }} className="relative overflow-hidden px-8 py-4 rounded-xl bg-white/[0.03] border text-zinc-200 font-bold text-sm cursor-pointer transition-colors flex items-center justify-center gap-2 w-full sm:w-52 backdrop-blur-sm">
                 <motion.span aria-hidden style={{ opacity: adminGlow }} className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(45,212,191,0.22),transparent_70%)]" />
-                <span className="relative">Admin Portal</span>
+                <span className="relative">Sign In</span>
               </motion.button>
             </Link>
           </motion.div>
@@ -704,8 +704,8 @@ function Landing() {
             </h2>
             <p className="text-sm sm:text-base text-zinc-400 max-w-lg mx-auto">Your resume, your matches, and your trajectory — all in one operating system. No setup, no noise, just signal.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-1">
-              <Link href="/portal" className="w-full sm:w-auto"><motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm cursor-pointer shadow-[0_0_40px_-4px_rgba(16,185,129,0.5)] transition-colors flex items-center justify-center gap-2 group w-full sm:w-60">Enter Student Portal <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" /></motion.button></Link>
-              <Link href="/admin/login" className="w-full sm:w-auto"><motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="px-8 py-4 rounded-xl bg-white/[0.04] border border-white/10 hover:border-white/20 hover:bg-white/[0.08] text-zinc-200 font-bold text-sm cursor-pointer transition-colors flex items-center justify-center gap-2 w-full sm:w-60 backdrop-blur-sm">Enter Admin Portal</motion.button></Link>
+              <Link href="/signup" className="w-full sm:w-auto"><motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="px-8 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm cursor-pointer shadow-[0_0_40px_-4px_rgba(16,185,129,0.5)] transition-colors flex items-center justify-center gap-2 group w-full sm:w-60">Get Started Free <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" /></motion.button></Link>
+              <Link href="/login" className="w-full sm:w-auto"><motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="px-8 py-4 rounded-xl bg-white/[0.04] border border-white/10 hover:border-white/20 hover:bg-white/[0.08] text-zinc-200 font-bold text-sm cursor-pointer transition-colors flex items-center justify-center gap-2 w-full sm:w-60 backdrop-blur-sm">Sign In</motion.button></Link>
             </div>
           </div>
         </motion.div>

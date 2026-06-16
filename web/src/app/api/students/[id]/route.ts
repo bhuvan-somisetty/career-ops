@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStudentProfile, updateStudent, deleteStudent, getResumeMeta, getAvatarMeta, getStudentCode } from '@/lib/studentService';
+import { getStudentProfile, updateStudent, deleteStudent, getResumeMeta, getAvatarMeta, getStudentCode, toProfileJson } from '@/lib/studentService';
 import type { StudentProfileInput } from '@/types/student';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const resume = await getResumeMeta(id);
     const avatar = await getAvatarMeta(id);
     const studentId = await getStudentCode(id);
-    return NextResponse.json({ id, studentId, profile, resume, avatar });
+    // profileJson: the { skills, education, experience, projects, certifications, … }
+    // snapshot, surfaced explicitly alongside the flat profile for JSON consumers.
+    return NextResponse.json({ id, studentId, profile, profileJson: toProfileJson(profile), resume, avatar });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

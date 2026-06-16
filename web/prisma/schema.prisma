@@ -11,8 +11,29 @@ datasource db {
   directUrl = env("DATABASE_URL_UNPOOLED")  // direct connection for migrations
 }
 
+// --- Account / authentication ---
+// One User == one login. Each User owns exactly one Student master profile.
+// Every per-user entity (profile, resume, tracked jobs, searches, views,
+// recommendations) is keyed to User.id via the Student relation or userId.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student      Student?
+  trackedJobs  TrackedJob[]
+  searches     SearchHistory[]
+  viewedJobs   ViewedJob[]
+}
+
 model Student {
   id String @id @default(cuid())
+
+  // --- Owning account (1:1). Nullable for legacy/admin-seeded rows. ---
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // --- Unique human-facing student code (immutable, e.g. CO-2026-000001) ---
   // Generated once at creation from an atomic counter; never updated.
@@ -52,6 +73,11 @@ model Student {
 
   // --- Meta ---
   profileCompleteness Int      @default(0)
+
+  // Denormalized JSON snapshot of the profile (skills/education/experience/
+  // projects/certifications). Regenerated on every create/update; the
+  // normalized child tables remain the source of truth.
+  profileJson Json?
 
   // --- Resume metadata (the binary lives in StudentResumeFile) ---
   resumeFileName   String?
@@ -201,4 +227,75 @@ model Award {
   text      String
 
   @@index([studentId])
+}
+
+// ── Central Job database ─────────────────────────────────────────────
+// One row per discovered posting. Filled by seed data (source="seed") and/or
+// live ATS ingestion (source="greenhouse"|"lever"|"ashby"). Both paths write
+// the SAME shape, so search + recommendations are source-agnostic.
+model Job {
+  id              String   @id @default(cuid())
+  source          String   // "seed" | "greenhouse" | "lever" | "ashby" | ...
+  externalId      String   // provider posting id (or a stable slug for seeds)
+  title           String
+  company         String
+  location        String?
+  atsUrl          String?  // direct apply / ATS posting URL
+  careerPortalUrl String?  // company careers page
+  description     String?
+  category        String?  // derived bucket, e.g. "Software Engineering", "Data"
+  postedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  trackedBy TrackedJob[]
+  viewedBy  ViewedJob[]
+
+  @@unique([source, externalId])
+  @@index([title])
+  @@index([company])
+  @@index([category])
+}
+
+// ── Per-user job tracker (Save Job → Applied → Interview → Rejected → Offer)
+model TrackedJob {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId     String?  // nullable: manually-added roles need no Job row
+  job       Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  company   String
+  role      String
+  location  String?
+  status    String   @default("Saved") // Saved|Applied|Interview|Rejected|Offer
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@unique([userId, jobId])
+}
+
+// ── Recommendation signals ───────────────────────────────────────────
+model SearchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query     String
+  kind      String   // "title" | "company"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ViewedJob {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId    String
+  job      Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  viewedAt DateTime @default(now())
+
+  @@unique([userId, jobId])
+  @@index([userId])
 }

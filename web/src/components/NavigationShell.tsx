@@ -458,10 +458,12 @@ export default function NavigationShell({ children }: { children: React.ReactNod
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
                     localStorage.removeItem('career_ops_logged_in');
                     localStorage.removeItem('career_ops_token');
-                    router.push('/portal');
+                    localStorage.removeItem('career_ops_student_id');
+                    router.push('/login');
                   }}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white border border-red-500 font-bold text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400/60"
                 >

@@ -69,6 +69,25 @@ function childCreates(p: StudentProfileInput) {
   };
 }
 
+/**
+ * Build the denormalized JSON snapshot stored on Student.profileJson. The
+ * requested shape — { skills, education, experience, projects, certifications }
+ * — plus the remaining collections so the JSON is a faithful profile mirror.
+ * Normalized child tables stay the source of truth; this is a convenience cache.
+ */
+export function toProfileJson(p: StudentProfileInput) {
+  return {
+    skills: p.skills,
+    education: p.education,
+    experience: p.experience,
+    projects: p.projects,
+    certifications: p.certifications,
+    softSkills: p.softSkills,
+    achievements: p.achievements,
+    awards: p.awards,
+  };
+}
+
 function scalarData(p: StudentProfileInput) {
   return {
     firstName: p.firstName.trim(),
@@ -94,6 +113,9 @@ function scalarData(p: StudentProfileInput) {
     description: p.description || null,
     yearsExperience: num(p.yearsExperience),
     profileCompleteness: computeCompleteness(p),
+    // Cast: our typed snapshot is valid JSON but doesn't match Prisma's
+    // structural InputJsonValue index-signature shape.
+    profileJson: toProfileJson(p) as unknown as Prisma.InputJsonValue,
   };
 }
 
@@ -102,7 +124,9 @@ export function formatStudentId(seq: number): string {
   return `CO-${new Date().getFullYear()}-${String(seq).padStart(6, '0')}`;
 }
 
-export async function createStudent(p: StudentProfileInput): Promise<{ id: string; studentId: string }> {
+export async function createStudent(
+  p: StudentProfileInput & { userId?: string }
+): Promise<{ id: string; studentId: string }> {
   // Atomic counter increment + student insert in one transaction → the
   // sequential studentId is collision-free even under concurrent creates.
   return prisma.$transaction(async (tx) => {
@@ -113,7 +137,12 @@ export async function createStudent(p: StudentProfileInput): Promise<{ id: strin
     });
     const studentId = formatStudentId(c.value);
     const created = await tx.student.create({
-      data: { studentId, ...scalarData(p), ...childCreates(p) },
+      data: {
+        studentId,
+        ...(p.userId ? { user: { connect: { id: p.userId } } } : {}),
+        ...scalarData(p),
+        ...childCreates(p),
+      },
     });
     return { id: created.id, studentId };
   });

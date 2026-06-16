@@ -138,8 +138,8 @@ function fmtDate(iso?: string | null): string {
 export default function StudentProfileEditor({
   initial,
   studentId,
-  backHref = '/admin/students',
-  backLabel = 'All students',
+  backHref = '/dashboard',
+  backLabel = 'Dashboard',
   title,
   resumeMeta = null,
   avatarMeta = null,
@@ -289,7 +289,7 @@ export default function StudentProfileEditor({
       if (!isEdit) {
         if (profileError) { setError(profileError); return; }
         setSaved(true);
-        if (data.id) router.push(`/admin/students/${data.id}`);
+        if (data.id) router.push('/profile');
         return;
       }
 

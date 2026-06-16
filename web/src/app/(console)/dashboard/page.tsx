@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useCurrency } from '@/context/CurrencyContext';
+import RecommendedJobs from '@/components/RecommendedJobs';
 
 interface Application {
   id: string;
@@ -276,6 +277,9 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Recommended Jobs (personalized from skills + activity) */}
+      <RecommendedJobs limit={6} />
 
       {/* Main Charts & Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

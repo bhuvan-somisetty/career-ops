@@ -11,14 +11,30 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Client-side local storage authorization check
-    const loggedIn = localStorage.getItem('career_ops_logged_in');
-    if (loggedIn !== 'true') {
-      router.replace('/portal');
-    } else {
-      setAuthorized(true);
-    }
-    setLoading(false);
+    // Server-session authorization check (HttpOnly cookie via /api/auth/me).
+    let cancelled = false;
+    fetch('/api/auth/me', { cache: 'no-store' })
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          localStorage.removeItem('career_ops_logged_in');
+          router.replace('/login');
+          return;
+        }
+        return res.json().then((data) => {
+          // Keep studentId handy for client pages that still read it locally.
+          if (data?.studentId) localStorage.setItem('career_ops_student_id', data.studentId);
+          localStorage.setItem('career_ops_logged_in', 'true');
+          setAuthorized(true);
+        });
+      })
+      .catch(() => {
+        if (!cancelled) router.replace('/login');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [router, pathname]);
 
   if (loading) {

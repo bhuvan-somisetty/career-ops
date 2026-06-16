@@ -12,8 +12,6 @@ const LEGACY_PAIRS: [string, string][] = [
   ['career_officer_student_id', 'career_ops_student_id'],
   ['career_officer_onboarded', 'career_ops_onboarded'],
   ['career_officer_currency', 'career_ops_currency'],
-  ['career_officer_admin_logged_in', 'career_ops_admin_logged_in'],
-  ['career_officer_admin_token', 'career_ops_admin_token'],
 ];
 
 export default function LegacyKeyMigration() {
