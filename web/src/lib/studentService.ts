@@ -402,4 +402,13 @@ export async function listStudents(opts: { search?: string; completeness?: strin
   });
 }
 
+/** Returns true if a DIFFERENT student record already uses this email. */
+export async function emailConflictsWithOther(id: string, email: string): Promise<boolean> {
+  const other = await prisma.student.findFirst({
+    where: { email: email.toLowerCase(), NOT: { id } },
+    select: { id: true },
+  });
+  return !!other;
+}
+
 export { emptyProfile };

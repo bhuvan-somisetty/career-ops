@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getStudentProfile, updateStudent, deleteStudent, getResumeMeta, getAvatarMeta, getStudentCode, toProfileJson } from '@/lib/studentService';
+import { getStudentProfile, updateStudent, deleteStudent, getResumeMeta, getAvatarMeta, getStudentCode, toProfileJson, emailConflictsWithOther } from '@/lib/studentService';
 import type { StudentProfileInput } from '@/types/student';
 
 export const runtime = 'nodejs';
@@ -31,13 +31,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         { status: 400 }
       );
     }
+    // Only reject if a DIFFERENT student owns this email — never block a user
+    // from saving their own profile with their existing email.
+    const email = body.email.trim().toLowerCase();
+    if (await emailConflictsWithOther(id, email)) {
+      return NextResponse.json(
+        { error: 'Another account is already using this email.' },
+        { status: 409 }
+      );
+    }
     await updateStudent(id, body);
     return NextResponse.json({ ok: true });
   } catch (err) {
     const e = err as { code?: string; message?: string };
-    if (e.code === 'P2002') {
-      return NextResponse.json({ error: 'A student with this email already exists.' }, { status: 409 });
-    }
     if (e.code === 'P2025') {
       return NextResponse.json({ error: 'Student not found.' }, { status: 404 });
     }

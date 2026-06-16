@@ -144,6 +144,8 @@ export default function StudentProfileEditor({
   resumeMeta = null,
   avatarMeta = null,
   displayId = null,
+  hideResume = false,
+  onSaveSuccess,
 }: {
   initial: StudentProfileInput;
   studentId?: string;
@@ -153,6 +155,8 @@ export default function StudentProfileEditor({
   resumeMeta?: ResumeMeta | null;
   avatarMeta?: AvatarMeta | null;
   displayId?: string | null;
+  hideResume?: boolean;
+  onSaveSuccess?: () => void;
 }) {
   const router = useRouter();
   const isEdit = !!studentId;
@@ -349,7 +353,13 @@ export default function StudentProfileEditor({
         setError(errors.join(' '));
       } else {
         setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+        // When onSaveSuccess is provided (e.g. onboarding wizard), advance after
+        // a short delay so the user sees the "Saved" confirmation; otherwise keep
+        // the indicator visible for the standard 2.5 s.
+        setTimeout(() => {
+          setSaved(false);
+          onSaveSuccess?.();
+        }, onSaveSuccess ? 1000 : 2500);
       }
     } catch {
       setError('Network error while saving.');
@@ -485,9 +495,9 @@ export default function StudentProfileEditor({
         </Section>
       )}
 
-      {isEdit ? (
-        /* Resume management card (premium) */
-        <Section title="Resume" desc="View, download, or replace the resume that powers extraction. Replacing it re-runs extraction so you can review before saving.">
+      {!hideResume && (isEdit ? (
+        /* Resume management card — shown only when not in Phase 1 of onboarding */
+        <Section title="Resume" desc="Upload, view, download, or replace your resume. Uploading re-runs AI extraction so you can review before saving.">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex items-start gap-3">
@@ -505,26 +515,33 @@ export default function StudentProfileEditor({
                   </div>
                 </div>
               </div>
+              {/* Button set depends on whether a resume file already exists */}
               <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href={resume?.hasFile ? `/api/students/${studentId}/resume` : undefined}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-disabled={!resume?.hasFile}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${resume?.hasFile ? 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer' : 'border-zinc-800 text-zinc-600 pointer-events-none opacity-50'}`}
-                >
-                  <Eye className="w-3.5 h-3.5" /> View
-                </a>
-                <a
-                  href={resume?.hasFile ? `/api/students/${studentId}/resume?download=1` : undefined}
-                  aria-disabled={!resume?.hasFile}
-                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors ${resume?.hasFile ? 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer' : 'border-zinc-800 text-zinc-600 pointer-events-none opacity-50'}`}
-                >
-                  <Download className="w-3.5 h-3.5" /> Download
-                </a>
-                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-60">
-                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Update Resume
-                </button>
+                {resume?.hasFile ? (
+                  <>
+                    <a
+                      href={`/api/students/${studentId}/resume`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer text-xs font-semibold transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> View Resume
+                    </a>
+                    <a
+                      href={`/api/students/${studentId}/resume?download=1`}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 cursor-pointer text-xs font-semibold transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download Resume
+                    </a>
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-60">
+                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Update Resume
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-60">
+                    {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />} Upload Resume
+                  </button>
+                )}
               </div>
             </div>
             {(extractNote || pendingName) && (
@@ -555,7 +572,7 @@ export default function StudentProfileEditor({
             )}
           </div>
         </Section>
-      )}
+      ))}
 
       {/* Part 1 — Personal */}
       <Section title="Personal Information">
