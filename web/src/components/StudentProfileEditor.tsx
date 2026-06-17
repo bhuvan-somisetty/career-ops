@@ -146,6 +146,7 @@ export default function StudentProfileEditor({
   displayId = null,
   hideResume = false,
   onSaveSuccess,
+  professionalOnly = false,
 }: {
   initial: StudentProfileInput;
   studentId?: string;
@@ -157,6 +158,10 @@ export default function StudentProfileEditor({
   displayId?: string | null;
   hideResume?: boolean;
   onSaveSuccess?: () => void;
+  /** When true, hides Personal / Address / Contact / Avatar sections and
+   *  prevents extraction from overwriting Phase-1 fields. Used in the
+   *  Phase 2 professional-profile step of onboarding. */
+  professionalOnly?: boolean;
 }) {
   const router = useRouter();
   const isEdit = !!studentId;
@@ -239,13 +244,15 @@ export default function StudentProfileEditor({
       const parsed = data.parsed || {};
       setP((prev) => ({
         ...prev,
-        firstName: parsed.firstName || prev.firstName,
-        middleName: parsed.middleName ?? prev.middleName,
-        lastName: parsed.lastName || prev.lastName,
-        // Use the real email parsed from the resume when present (it is unique
-        // per candidate); fall back to whatever the record already had.
-        email: parsed.email || prev.email,
-        phone: parsed.phone || prev.phone,
+        // In professionalOnly mode (Phase 2 of onboarding) extraction must NOT
+        // overwrite Phase-1 personal info the user already confirmed.
+        ...(professionalOnly ? {} : {
+          firstName: parsed.firstName || prev.firstName,
+          middleName: parsed.middleName ?? prev.middleName,
+          lastName: parsed.lastName || prev.lastName,
+          email: parsed.email || prev.email,
+          phone: parsed.phone || prev.phone,
+        }),
         linkedinUrl: parsed.linkedinUrl || prev.linkedinUrl,
         githubUrl: parsed.githubUrl || prev.githubUrl,
         summary: parsed.summary || prev.summary,
@@ -379,7 +386,7 @@ export default function StudentProfileEditor({
             <ArrowLeft className="w-3.5 h-3.5" /> {backLabel}
           </button>
           <div className="flex items-center gap-3">
-            {isEdit && (
+            {isEdit && !professionalOnly && (
               shownAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={shownAvatar} alt="Profile picture" className="w-10 h-10 rounded-full object-cover border border-zinc-700 shrink-0" />
@@ -431,8 +438,8 @@ export default function StudentProfileEditor({
         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarSelect(f); e.target.value = ''; }}
       />
 
-      {/* Profile picture management (edit mode only — needs a student id to attach to) */}
-      {isEdit && (
+      {/* Profile picture management — hidden in professionalOnly (Phase 2 onboarding) */}
+      {isEdit && !professionalOnly && (
         <Section title="Profile Picture" desc="Upload a photo (JPG, PNG, or WEBP). It appears across your profile and navigation. Changes apply when you Save.">
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
             <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -574,38 +581,42 @@ export default function StudentProfileEditor({
         </Section>
       ))}
 
-      {/* Part 1 — Personal */}
-      <Section title="Personal Information">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="First Name" value={p.firstName} onChange={(v) => set('firstName', v)} required />
-          <Field label="Middle Name" value={p.middleName} onChange={(v) => set('middleName', v)} />
-          <Field label="Last Name" value={p.lastName} onChange={(v) => set('lastName', v)} required />
-          <Field label="Aadhaar Number" value={p.aadhaarNumber} onChange={(v) => set('aadhaarNumber', v)} />
-          <Field label="Gender" value={p.gender} onChange={(v) => set('gender', v)} />
-          <Field label="Nationality" value={p.nationality} onChange={(v) => set('nationality', v)} />
-          <Field label="Date of Birth" value={p.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} placeholder="YYYY-MM-DD" />
-        </div>
-      </Section>
+      {/* Phase-1 sections — hidden in professionalOnly (Phase 2 onboarding) */}
+      {!professionalOnly && (
+        <>
+          <Section title="Personal Information">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="First Name" value={p.firstName} onChange={(v) => set('firstName', v)} required />
+              <Field label="Middle Name" value={p.middleName} onChange={(v) => set('middleName', v)} />
+              <Field label="Last Name" value={p.lastName} onChange={(v) => set('lastName', v)} required />
+              <Field label="Aadhaar Number" value={p.aadhaarNumber} onChange={(v) => set('aadhaarNumber', v)} />
+              <Field label="Gender" value={p.gender} onChange={(v) => set('gender', v)} />
+              <Field label="Nationality" value={p.nationality} onChange={(v) => set('nationality', v)} />
+              <Field label="Date of Birth" value={p.dateOfBirth} onChange={(v) => set('dateOfBirth', v)} placeholder="YYYY-MM-DD" />
+            </div>
+          </Section>
 
-      <Section title="Address">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Address 1" value={p.address1} onChange={(v) => set('address1', v)} />
-          <Field label="Address 2" value={p.address2} onChange={(v) => set('address2', v)} />
-          <Field label="City" value={p.city} onChange={(v) => set('city', v)} />
-          <Field label="District" value={p.district} onChange={(v) => set('district', v)} />
-          <Field label="State" value={p.state} onChange={(v) => set('state', v)} />
-          <Field label="Pin Code" value={p.pinCode} onChange={(v) => set('pinCode', v)} />
-          <Field label="Country" value={p.country} onChange={(v) => set('country', v)} />
-        </div>
-      </Section>
+          <Section title="Address">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Address 1" value={p.address1} onChange={(v) => set('address1', v)} />
+              <Field label="Address 2" value={p.address2} onChange={(v) => set('address2', v)} />
+              <Field label="City" value={p.city} onChange={(v) => set('city', v)} />
+              <Field label="District" value={p.district} onChange={(v) => set('district', v)} />
+              <Field label="State" value={p.state} onChange={(v) => set('state', v)} />
+              <Field label="Pin Code" value={p.pinCode} onChange={(v) => set('pinCode', v)} />
+              <Field label="Country" value={p.country} onChange={(v) => set('country', v)} />
+            </div>
+          </Section>
 
-      <Section title="Contact">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Field label="Email" value={p.email} onChange={(v) => set('email', v)} type="email" required />
-          <Field label="Phone" value={p.phone} onChange={(v) => set('phone', v)} />
-          <Field label="Alternate Phone" value={p.altPhone} onChange={(v) => set('altPhone', v)} />
-        </div>
-      </Section>
+          <Section title="Contact">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Email" value={p.email} onChange={(v) => set('email', v)} type="email" required />
+              <Field label="Phone" value={p.phone} onChange={(v) => set('phone', v)} />
+              <Field label="Alternate Phone" value={p.altPhone} onChange={(v) => set('altPhone', v)} />
+            </div>
+          </Section>
+        </>
+      )}
 
       {/* Part 2 — Professional */}
       <Section title="Social & Summary">
