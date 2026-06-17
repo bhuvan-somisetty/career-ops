@@ -121,20 +121,62 @@ for (let i = 0; i < sampleJobs.length; i++) {
   const externalId = `${company.toLowerCase()}-${String(i + 1).padStart(3, '0')}`;
   const portal = companyPortals[company] || null;
   const description = `${title} position at ${company}, based in ${location}. Example listing seeded for local development; refresh with live ATS feeds from the Job Discovery page.`;
+  
+  const category = categorize(title);
+  const workModes = ['Remote', 'Hybrid', 'On-Site', 'Work From Home'];
+  const employmentTypes = ['Full-Time', 'Part-Time', 'Contract', 'Internship'];
+  const experienceLevels = ['Fresher', 'Entry Level', 'Mid Level', 'Senior Level'];
+  const workMode = workModes[i % workModes.length];
+  const employmentType = employmentTypes[i % employmentTypes.length];
+  const experienceLevel = title.toLowerCase().includes('senior') ? 'Senior Level' : experienceLevels[i % experienceLevels.length];
+  const salaryMin = 50000 + (i * 3000) % 70000;
+  const salaryMax = salaryMin + 20000 + (i * 5000) % 80000;
+  
+  let skills = '';
+  if (category === 'Data & Analytics') skills = 'Python, SQL, Tableau, PowerBI';
+  else if (category === 'Machine Learning & AI') skills = 'Python, PyTorch, LLMs, TensorFlow';
+  else if (category === 'Software Engineering') skills = 'TypeScript, React, Next.js, Node.js';
+  else if (category === 'DevOps & Cloud') skills = 'AWS, Docker, Kubernetes, Terraform';
+  else if (category === 'Product & Design') skills = 'Figma, Product Strategy, Agile';
+  else if (category === 'QA & Testing') skills = 'Selenium, Cypress, QA, Jest';
+  else if (category === 'Security') skills = 'Penetration Testing, OWASP, Network Security';
+  else if (category === 'Mobile') skills = 'React Native, Flutter, Swift, Kotlin';
+  else skills = 'Excel, Communication';
+
   await prisma.job.upsert({
     where: { source_externalId: { source: 'seed', externalId } },
-    update: { title, company, location, category: categorize(title), description, careerPortalUrl: companyPortals[company] || null, atsUrl: companyPortals[company] || null },
+    update: {
+      title,
+      company,
+      location,
+      category,
+      description,
+      careerPortalUrl: companyPortals[company] || null,
+      atsUrl: companyPortals[company] || null,
+      workMode,
+      employmentType,
+      experienceLevel,
+      salaryMin,
+      salaryMax,
+      skills,
+    },
     create: {
       source: 'seed',
       externalId,
       title,
       company,
       location,
-      category: categorize(title),
+      category,
       careerPortalUrl: portal,
       atsUrl: portal,
       description,
       postedAt: new Date(),
+      workMode,
+      employmentType,
+      experienceLevel,
+      salaryMin,
+      salaryMax,
+      skills,
     },
   });
   jobCount++;

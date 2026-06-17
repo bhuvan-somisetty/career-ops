@@ -14,20 +14,50 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const q = searchParams.get('q') ?? '';
     const title = searchParams.get('title') ?? '';
     const company = searchParams.get('company') ?? '';
     const category = searchParams.get('category') ?? '';
+    const location = searchParams.get('location') ?? '';
+    const workMode = searchParams.get('workMode') ?? '';
+    const employmentType = searchParams.get('employmentType') ?? '';
+    const experienceLevel = searchParams.get('experienceLevel') ?? '';
+    const datePosted = searchParams.get('datePosted') ?? '';
+    const skills = searchParams.get('skills') ?? '';
 
-    const jobs = await searchJobs({ title, company, category });
+    const sMin = searchParams.get('salaryMin');
+    const sMax = searchParams.get('salaryMax');
+    const salaryMin = sMin ? parseInt(sMin, 10) : undefined;
+    const salaryMax = sMax ? parseInt(sMax, 10) : undefined;
+
+    const jobs = await searchJobs({
+      q,
+      title,
+      company,
+      category,
+      location,
+      workMode,
+      employmentType,
+      experienceLevel,
+      salaryMin,
+      salaryMax,
+      datePosted,
+      skills,
+    });
     const categories = await listCategories();
 
     // Record the search (best-effort; never blocks the response).
     const user = await getSessionUser();
     if (user) {
-      const q = title.trim() || company.trim();
-      if (q) {
+      const searchRecord = q.trim() || title.trim() || company.trim() || location.trim() || skills.trim();
+      if (searchRecord) {
+        let kind = 'title';
+        if (company.trim()) kind = 'company';
+        else if (location.trim()) kind = 'location';
+        else if (skills.trim()) kind = 'skills';
+        
         prisma.searchHistory
-          .create({ data: { userId: user.userId, query: q, kind: title.trim() ? 'title' : 'company' } })
+          .create({ data: { userId: user.userId, query: searchRecord, kind } })
           .catch(() => {});
       }
     }

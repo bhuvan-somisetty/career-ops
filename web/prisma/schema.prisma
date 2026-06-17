@@ -260,6 +260,13 @@ model Job {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  workMode        String?  // "Remote" | "Hybrid" | "On-Site" | "Work From Home"
+  employmentType  String?  // "Internship" | "Full-Time" | "Part-Time" | "Contract"
+  experienceLevel String?  // "Fresher" | "Entry Level" | "Mid Level" | "Senior Level"
+  salaryMin       Int?
+  salaryMax       Int?
+  skills          String?  // comma-separated list of skills
+
   trackedBy TrackedJob[]
   viewedBy  ViewedJob[]
 

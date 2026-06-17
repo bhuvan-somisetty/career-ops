@@ -18,7 +18,8 @@ import {
   Bell,
   Globe,
   ChevronDown,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react';
 import { useCurrency, CURRENCIES } from '@/context/CurrencyContext';
 
@@ -72,6 +73,7 @@ export default function NavigationShell({ children }: { children: React.ReactNod
       items: [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Job Discovery', href: '/jobs', icon: Briefcase },
+        { name: 'Company Explorer', href: '/companies', icon: Building2 },
         { name: 'Job Pipeline', href: '/tracker', icon: Columns },
       ]
     },
