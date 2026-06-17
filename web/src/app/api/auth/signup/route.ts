@@ -19,9 +19,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
-    if (existing) {
+    const existingUser = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (existingUser) {
       return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
+    }
+
+    const existingStudent = await prisma.student.findUnique({
+      where: { email: cleanEmail },
+      select: { id: true, userId: true },
+    });
+    if (existingStudent && existingStudent.userId) {
+      return NextResponse.json({ error: 'A student profile with this email already exists.' }, { status: 409 });
     }
 
     const user = await prisma.user.create({
@@ -29,43 +37,28 @@ export async function POST(request: Request) {
       select: { id: true, email: true },
     });
 
-    // Provision the linked Student profile so the rest of the app (profile,
-    // resume, match) has a record to read/write immediately.
     let studentId: string;
     try {
-      const result = await createStudent({
-        ...emptyProfile(),
-        firstName: String(firstName || '').trim() || 'New',
-        lastName: String(lastName || '').trim() || 'Student',
-        email: cleanEmail,
-        userId: user.id,
-      });
-      studentId = result.id;
-    } catch (studentErr: unknown) {
-      // P2002: a Student row already has this email (legacy data / partial signup).
-      // Try to claim it if unlinked; otherwise fall back to a unique email.
-      if ((studentErr as { code?: string })?.code === 'P2002') {
-        const existing = await prisma.student.findUnique({
-          where: { email: cleanEmail },
-          select: { id: true, userId: true },
-        });
-        if (existing && !existing.userId) {
-          await prisma.student.update({ where: { id: existing.id }, data: { userId: user.id } });
-          studentId = existing.id;
-        } else {
-          const [local, domain] = cleanEmail.split('@');
-          const result = await createStudent({
-            ...emptyProfile(),
-            firstName: String(firstName || '').trim() || 'New',
-            lastName: String(lastName || '').trim() || 'Student',
-            email: `${local}+${user.id.slice(-8)}@${domain}`,
-            userId: user.id,
-          });
-          studentId = result.id;
-        }
+      if (existingStudent && !existingStudent.userId) {
+        await prisma.student.update({ where: { id: existingStudent.id }, data: { userId: user.id } });
+        studentId = existingStudent.id;
       } else {
-        throw studentErr;
+        const result = await createStudent({
+          ...emptyProfile(),
+          firstName: String(firstName || '').trim() || 'New',
+          lastName: String(lastName || '').trim() || 'Student',
+          email: cleanEmail,
+          userId: user.id,
+        });
+        studentId = result.id;
       }
+    } catch (studentErr: unknown) {
+      await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+      const code = (studentErr as { code?: string })?.code;
+      if (code === 'P2002') {
+        return NextResponse.json({ error: 'A student profile with this email already exists.' }, { status: 409 });
+      }
+      throw studentErr;
     }
 
     const res = NextResponse.json({ userId: user.id, email: user.email, studentId }, { status: 201 });

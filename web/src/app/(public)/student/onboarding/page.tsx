@@ -83,9 +83,22 @@ export default function StudentOnboardingPage() {
     (async () => {
       try {
         const meRes = await fetch('/api/auth/me', { cache: 'no-store' });
-        if (!meRes.ok) { router.replace('/login'); return; }
+        if (!meRes.ok) {
+          if (!cancelled) {
+            setErr('Not authenticated.');
+            setPhase('error');
+            router.replace('/login');
+          }
+          return;
+        }
         const me = await meRes.json();
-        if (!me?.studentId) throw new Error('No profile linked to your account.');
+        if (!me?.studentId) {
+          if (!cancelled) {
+            setErr('No student profile linked to your account.');
+            setPhase('error');
+          }
+          return;
+        }
         localStorage.setItem(STUDENT_ID_KEY, me.studentId);
 
         const data = await fetchProfile(me.studentId);
@@ -97,13 +110,13 @@ export default function StudentOnboardingPage() {
         setAvatar((data.avatar as AvatarMeta) ?? null);
         setDisplayId((data.studentId as string) ?? null);
 
-        if (me.onboardingCompleted || localStorage.getItem('career_ops_onboarded') === 'true') {
+        if (me.onboardingCompleted) {
           router.replace('/dashboard');
           return;
         }
-        setPhase('welcome');
+        setPhase('phase1'); // Go straight to Phase 1: Student Information Form ONLY
       } catch (e) {
-        if (!cancelled) { setErr((e as Error).message); setPhase('error'); }
+        if (!cancelled) { setErr((e as Error).message || 'Failed to resolve profile.'); setPhase('error'); }
       }
     })();
     return () => { cancelled = true; };
@@ -170,12 +183,16 @@ export default function StudentOnboardingPage() {
 
   async function finishOnboarding() {
     try {
-      await fetch('/api/auth/complete-onboarding', { method: 'POST' });
+      const res = await fetch('/api/auth/complete-onboarding', { method: 'POST' });
+      if (res.ok) {
+        router.push('/dashboard');
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setError1(d.error || 'Failed to complete onboarding on server.');
+      }
     } catch {
-      // best-effort; localStorage flag is the fallback
+      setError1('Network error while completing onboarding.');
     }
-    localStorage.setItem('career_ops_onboarded', 'true');
-    router.push('/dashboard');
   }
 
   /* ── Loading ── */
@@ -190,8 +207,18 @@ export default function StudentOnboardingPage() {
   /* ── Error ── */
   if (phase === 'error') {
     return (
-      <div className="max-w-md mx-auto mt-16 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-300 text-xs">
-        <AlertTriangle className="w-4 h-4 shrink-0" /> {err}
+      <div className="max-w-md mx-auto mt-16 p-6 rounded-2xl bg-zinc-950/45 border border-zinc-900 backdrop-blur-md space-y-4">
+        <div className="flex items-center gap-2 text-red-300 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0" /> {err}
+        </div>
+        <button
+          onClick={() => {
+            window.location.reload();
+          }}
+          className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs cursor-pointer text-center transition-colors border border-zinc-800"
+        >
+          Try Again / Refresh
+        </button>
       </div>
     );
   }

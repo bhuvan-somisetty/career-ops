@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@prisma/client', 'prisma'],
   // Serve the captured product screenshots (in /public/showcase) as-is.
   images: { unoptimized: true },
+  async redirects() {
+    return [
+      {
+        source: '/console/profile',
+        destination: '/profile',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
