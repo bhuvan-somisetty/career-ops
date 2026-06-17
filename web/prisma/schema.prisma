@@ -16,16 +16,28 @@ datasource db {
 // Every per-user entity (profile, resume, tracked jobs, searches, views,
 // recommendations) is keyed to User.id via the Student relation or userId.
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  passwordHash        String
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   student      Student?
   trackedJobs  TrackedJob[]
   searches     SearchHistory[]
   viewedJobs   ViewedJob[]
+  resetTokens  PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Student {

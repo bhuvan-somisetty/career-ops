@@ -5,7 +5,8 @@ import { SESSION_COOKIE, verifySession } from './auth';
 export interface SessionUser {
   userId: string;
   email: string;
-  studentId: string | null; // the owning Student.id (master profile), if created
+  studentId: string | null;
+  onboardingCompleted: boolean;
 }
 
 /**
@@ -21,10 +22,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, student: { select: { id: true } } },
+    select: { id: true, email: true, onboardingCompleted: true, student: { select: { id: true } } },
   });
   if (!user) return null;
-  return { userId: user.id, email: user.email, studentId: user.student?.id ?? null };
+  return {
+    userId: user.id,
+    email: user.email,
+    studentId: user.student?.id ?? null,
+    onboardingCompleted: user.onboardingCompleted,
+  };
 }
 
 /** Convenience: throw-style guard for route handlers. */

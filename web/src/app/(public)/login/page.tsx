@@ -28,10 +28,9 @@ export default function LoginPage() {
         setError(data.error || 'Login failed.');
         return;
       }
-      // Keep a lightweight client flag for legacy guards / nav.
       localStorage.setItem('career_ops_logged_in', 'true');
       if (data.studentId) localStorage.setItem('career_ops_student_id', data.studentId);
-      router.push('/dashboard');
+      router.push(data.onboardingCompleted ? '/dashboard' : '/student/onboarding');
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -85,10 +84,13 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-zinc-500">
-          No account?{' '}
-          <Link href="/signup" className="text-emerald-400 hover:text-emerald-300 font-semibold">Create one</Link>
-        </p>
+        <div className="flex items-center justify-between text-[11px] text-zinc-500">
+          <Link href="/forgot-password" className="hover:text-zinc-300 transition-colors">Forgot password?</Link>
+          <span>
+            No account?{' '}
+            <Link href="/signup" className="text-emerald-400 hover:text-emerald-300 font-semibold">Create one</Link>
+          </span>
+        </div>
       </motion.div>
     </div>
   );

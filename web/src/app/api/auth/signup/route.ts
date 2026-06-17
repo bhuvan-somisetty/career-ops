@@ -31,13 +31,42 @@ export async function POST(request: Request) {
 
     // Provision the linked Student profile so the rest of the app (profile,
     // resume, match) has a record to read/write immediately.
-    const { id: studentId } = await createStudent({
-      ...emptyProfile(),
-      firstName: String(firstName || '').trim() || 'New',
-      lastName: String(lastName || '').trim() || 'Student',
-      email: cleanEmail,
-      userId: user.id,
-    });
+    let studentId: string;
+    try {
+      const result = await createStudent({
+        ...emptyProfile(),
+        firstName: String(firstName || '').trim() || 'New',
+        lastName: String(lastName || '').trim() || 'Student',
+        email: cleanEmail,
+        userId: user.id,
+      });
+      studentId = result.id;
+    } catch (studentErr: unknown) {
+      // P2002: a Student row already has this email (legacy data / partial signup).
+      // Try to claim it if unlinked; otherwise fall back to a unique email.
+      if ((studentErr as { code?: string })?.code === 'P2002') {
+        const existing = await prisma.student.findUnique({
+          where: { email: cleanEmail },
+          select: { id: true, userId: true },
+        });
+        if (existing && !existing.userId) {
+          await prisma.student.update({ where: { id: existing.id }, data: { userId: user.id } });
+          studentId = existing.id;
+        } else {
+          const [local, domain] = cleanEmail.split('@');
+          const result = await createStudent({
+            ...emptyProfile(),
+            firstName: String(firstName || '').trim() || 'New',
+            lastName: String(lastName || '').trim() || 'Student',
+            email: `${local}+${user.id.slice(-8)}@${domain}`,
+            userId: user.id,
+          });
+          studentId = result.id;
+        }
+      } else {
+        throw studentErr;
+      }
+    }
 
     const res = NextResponse.json({ userId: user.id, email: user.email, studentId }, { status: 201 });
     res.cookies.set(SESSION_COOKIE, signSession(user.id), {

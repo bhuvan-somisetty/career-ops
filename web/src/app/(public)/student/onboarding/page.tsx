@@ -97,7 +97,7 @@ export default function StudentOnboardingPage() {
         setAvatar((data.avatar as AvatarMeta) ?? null);
         setDisplayId((data.studentId as string) ?? null);
 
-        if (localStorage.getItem('career_ops_onboarded') === 'true') {
+        if (me.onboardingCompleted || localStorage.getItem('career_ops_onboarded') === 'true') {
           router.replace('/dashboard');
           return;
         }
@@ -168,7 +168,12 @@ export default function StudentOnboardingPage() {
     }
   }
 
-  function finishOnboarding() {
+  async function finishOnboarding() {
+    try {
+      await fetch('/api/auth/complete-onboarding', { method: 'POST' });
+    } catch {
+      // best-effort; localStorage flag is the fallback
+    }
     localStorage.setItem('career_ops_onboarded', 'true');
     router.push('/dashboard');
   }

@@ -22,9 +22,12 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
           return;
         }
         return res.json().then((data) => {
-          // Keep studentId handy for client pages that still read it locally.
           if (data?.studentId) localStorage.setItem('career_ops_student_id', data.studentId);
           localStorage.setItem('career_ops_logged_in', 'true');
+          if (data?.onboardingCompleted === false) {
+            router.replace('/student/onboarding');
+            return;
+          }
           setAuthorized(true);
         });
       })

@@ -15,13 +15,18 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
-      select: { id: true, email: true, passwordHash: true, student: { select: { id: true } } },
+      select: { id: true, email: true, passwordHash: true, onboardingCompleted: true, student: { select: { id: true } } },
     });
     if (!user || !verifyPassword(String(password), user.passwordHash)) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
     }
 
-    const res = NextResponse.json({ userId: user.id, email: user.email, studentId: user.student?.id ?? null });
+    const res = NextResponse.json({
+      userId: user.id,
+      email: user.email,
+      studentId: user.student?.id ?? null,
+      onboardingCompleted: user.onboardingCompleted,
+    });
     res.cookies.set(SESSION_COOKIE, signSession(user.id), {
       httpOnly: true,
       sameSite: 'lax',
